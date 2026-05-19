@@ -13,6 +13,7 @@
     <resource-bundle>messages.MyBundle</resource-bundle>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory" id="DevPulse"/>        <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.MyProjectActivity" />
+        <toolWindow factoryClass="com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory" id="DevPulse"/>
+        <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.MyProjectActivity" />
     </extensions>
 </idea-plugin>

@@ -37,6 +37,11 @@ This Fancy IntelliJ Platform Plugin is going to be your implementation of the br
   Download the [latest release](https://github.com/filip-labs/DevPulse/releases/latest) and install it manually using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
 
+## License
+
+This project is source-available, not open-source. You may view the code, but you may not use, copy, modify, distribute, or commercialize it without explicit written permission from the author. Commercial use requires a paid license.
+
+See [LICENSE](./LICENSE) for the full terms. Licensing inquiries should go through the repository owner, `filip-labs`.
 
 ---
 Plugin based on the [IntelliJ Platform Plugin Template][template].

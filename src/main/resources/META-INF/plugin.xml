@@ -14,6 +14,6 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <toolWindow factoryClass="com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory" id="DevPulse"/>
-        <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.MyProjectActivity" />
+        <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.DevPulseStartupActivity" />
     </extensions>
 </idea-plugin>

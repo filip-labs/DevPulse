@@ -8,11 +8,14 @@
  */
 package com.github.filiplabs.devpulse.tracking
 
+import com.github.filiplabs.devpulse.model.EditEvent
+import com.github.filiplabs.devpulse.model.EditType
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
+import java.time.Instant
 
 class DevPulseDocumentChangeTracker(
     private val disposable: Disposable,
@@ -30,20 +33,31 @@ class DevPulseDocumentChangeTracker(
                 ?: "unknown"
 
             val fileName = filePath.substringAfterLast('/')
-            val changeSource = if (pasteActionTracker.isPasteInProgress()) "PASTE" else "OTHER"
 
             val addedCharacters = event.newLength
             val removedCharacters = event.oldLength
             val netChange = event.newLength - event.oldLength
 
+            val editType = classifyEdit(
+                addedCharacters = addedCharacters,
+                causedByPaste = pasteActionTracker.isPasteInProgress()
+            )
+
+            val editEvent = EditEvent(
+                timestamp = Instant.now(),
+                file = filePath,
+                type = editType,
+                characterCount = addedCharacters
+            )
+
             val message =
-                "DevPulse change: $fileName: source=$changeSource, offset=${event.offset}, " +
-                    "+$addedCharacters / -$removedCharacters, net=$netChange"
+                "DevPulse change: $fileName: type=${editEvent.type}, " +
+                        "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
 
             logger.info(message)
 
             // Uncomment for manual sandbox testing.
-            // This prints structured document change events directly in the runIde terminal output.
+            // This prints classified document change events directly in the runIde terminal output.
             println(message)
         }
     }
@@ -59,5 +73,24 @@ class DevPulseDocumentChangeTracker(
         // Uncomment for manual sandbox testing.
         // This prints tracker startup directly in the runIde terminal output.
         println("DevPulse document change tracker started")
+    }
+
+    private fun classifyEdit(
+        addedCharacters: Int,
+        causedByPaste: Boolean
+    ): EditType {
+        if (causedByPaste) {
+            return EditType.PASTED
+        }
+
+        return if (addedCharacters <= TYPED_CHARACTER_THRESHOLD) {
+            EditType.TYPED
+        } else {
+            EditType.INSERTED
+        }
+    }
+
+    private companion object {
+        const val TYPED_CHARACTER_THRESHOLD = 2
     }
 }

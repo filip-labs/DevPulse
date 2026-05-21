@@ -15,12 +15,15 @@ import com.intellij.openapi.actionSystem.ex.AnActionListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
+import java.util.concurrent.atomic.AtomicBoolean
 
 class PasteActionTracker(
     private val project: Project
 ) {
 
     private val logger = thisLogger()
+
+    private val pasteInProgress = AtomicBoolean(false)
 
     fun start() {
         ApplicationManager
@@ -37,17 +40,14 @@ class PasteActionTracker(
                     ) {
                         val actionId = event.actionManager.getId(action) ?: "unknown"
 
-                        logger.info("DevPulse action started: id=$actionId")
-
-                        // Uncomment for manual sandbox testing.
-                        // This prints action IDs directly in the runIde terminal output.
-                        // println("DevPulse action started: id=$actionId")
-
                         if (isPasteAction(actionId)) {
+                            pasteInProgress.set(true)
+
                             logger.info("DevPulse paste action started: id=$actionId")
 
                             // Uncomment for manual sandbox testing.
-                            // println("DevPulse paste action started: id=$actionId")
+                            // This prints paste action start directly in the runIde terminal output.
+                            println("DevPulse paste action started: id=$actionId")
                         }
                     }
 
@@ -58,17 +58,14 @@ class PasteActionTracker(
                     ) {
                         val actionId = event.actionManager.getId(action) ?: "unknown"
 
-                        logger.info("DevPulse action finished: id=$actionId")
-
-                        // Uncomment for manual sandbox testing.
-                        // This prints action IDs directly in the runIde terminal output.
-                        // println("DevPulse action finished: id=$actionId")
-
                         if (isPasteAction(actionId)) {
+                            pasteInProgress.set(false)
+
                             logger.info("DevPulse paste action finished: id=$actionId")
 
                             // Uncomment for manual sandbox testing.
-                            // println("DevPulse paste action finished: id=$actionId")
+                            // This prints paste action finish directly in the runIde terminal output.
+                            println("DevPulse paste action finished: id=$actionId")
                         }
                     }
                 }
@@ -77,7 +74,12 @@ class PasteActionTracker(
         logger.info("DevPulse paste action tracker started")
 
         // Uncomment for manual sandbox testing.
-        // println("DevPulse paste action tracker started")
+        // This prints paste action tracker startup directly in the runIde terminal output.
+        println("DevPulse paste action tracker started")
+    }
+
+    fun isPasteInProgress(): Boolean {
+        return pasteInProgress.get()
     }
 
     private fun isPasteAction(actionId: String): Boolean {

@@ -1,0 +1,45 @@
+DevPulse Source-Available License
+
+Copyright (c) 2026 Filip Cvetković / filip-labs.
+All rights reserved.
+
+This repository is made publicly available solely for viewing, educational
+review, and portfolio/employer evaluation. This project is source-available
+and not open-source.
+
+Subject to the terms below, you may access and view the source code in this
+repository and make only such transient technical copies as are strictly
+necessary for that viewing and evaluation. No other rights are granted,
+whether express, implied, by estoppel, or otherwise.
+
+Without prior explicit written permission from the author, you may not:
+
+- use the code or any substantial portion of it for any personal, internal,
+  client, commercial, or production purpose;
+- copy, reproduce, download for reuse, archive for reuse, modify, adapt,
+  translate, reverse engineer, create derivative works from, or otherwise
+  exploit the code;
+- publish, distribute, redistribute, sublicense, sell, lease, lend, assign,
+  transfer, disclose, or make the code available to any third party;
+- include the code, in whole or in part, in any other project, repository,
+  library, plugin, product, service, dataset, model, or deliverable;
+- use the code to build, train, improve, benchmark, or support another
+  commercial or non-commercial product or service.
+
+Any commercial use, production use, internal business use, client work, or
+inclusion in another project or product requires prior explicit written
+permission from the author and a separate paid commercial license agreement.
+
+All rights, title, and interest in and to the software, documentation, and
+related materials remain exclusively with Filip Cvetković / filip-labs.
+
+THIS SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE
+AUTHOR OR COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM,
+OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+For permissions, commercial licensing, or other inquiries, contact the
+repository owner: filip-labs.

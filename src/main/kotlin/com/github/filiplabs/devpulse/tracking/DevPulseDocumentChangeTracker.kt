@@ -1,12 +1,3 @@
-/*
- * Copyright (c) 2026 Filip Cvetković / filip-labs.
- * All rights reserved.
- *
- * This source code is source-available for viewing only.
- * Use, copying, modification, distribution, or commercial use is prohibited
- * without explicit written permission and a paid license from the author.
- */
-
 package com.github.filiplabs.devpulse.tracking
 
 import com.intellij.openapi.Disposable
@@ -25,17 +16,24 @@ class DevPulseDocumentChangeTracker(
     private val documentListener = object : DocumentListener {
 
         override fun documentChanged(event: DocumentEvent) {
-            val eventFilePath = activeFileTracker.getFilePath(event.document) ?: "unknown"
-            val activeFilePath = activeFileTracker.getActiveFilePath() ?: "unknown"
+            val filePath = activeFileTracker.getFilePath(event.document)
+                ?: activeFileTracker.getActiveFilePath()
+                ?: "unknown"
+
+            val fileName = filePath.substringAfterLast('/')
+
+            val addedCharacters = event.newLength
+            val removedCharacters = event.oldLength
+            val netChange = event.newLength - event.oldLength
 
             val message =
-                "DevPulse document changed: file=$eventFilePath, activeFile=$activeFilePath, " +
-                        "offset=${event.offset}, oldLength=${event.oldLength}, newLength=${event.newLength}"
+                "DevPulse change: $fileName: offset=${event.offset}, " +
+                        "+$addedCharacters / -$removedCharacters, net=$netChange"
 
             logger.info(message)
 
             // Uncomment for manual sandbox testing.
-            // This prints document change events directly in the runIde terminal output.
+            // This prints structured document change events directly in the runIde terminal output.
             //println(message)
         }
     }

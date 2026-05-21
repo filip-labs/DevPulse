@@ -9,6 +9,7 @@
 
 package com.github.filiplabs.devpulse.startup
 
+import com.github.filiplabs.devpulse.tracking.ActiveFileTracker
 import com.github.filiplabs.devpulse.tracking.DevPulseDocumentChangeTracker
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
@@ -24,8 +25,14 @@ class DevPulseStartupActivity : ProjectActivity {
 
         // Uncomment for manual sandbox testing.
         // This prints startup activity execution directly in the runIde terminal output.
-        // println("DevPulse startup activity executed for project: ${project.name}")
+        //println("DevPulse startup activity executed for project: ${project.name}")
 
-        DevPulseDocumentChangeTracker(project).start()
+        val activeFileTracker = ActiveFileTracker(project)
+        activeFileTracker.start()
+
+        DevPulseDocumentChangeTracker(
+            disposable = project,
+            activeFileTracker = activeFileTracker
+        ).start()
     }
 }

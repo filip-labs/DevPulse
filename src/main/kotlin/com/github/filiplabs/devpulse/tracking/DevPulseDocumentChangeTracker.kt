@@ -16,7 +16,8 @@ import com.intellij.openapi.editor.event.DocumentListener
 
 class DevPulseDocumentChangeTracker(
     private val disposable: Disposable,
-    private val activeFileTracker: ActiveFileTracker
+    private val activeFileTracker: ActiveFileTracker,
+    private val pasteActionTracker: PasteActionTracker
 ) {
 
     private val logger = thisLogger()
@@ -29,20 +30,21 @@ class DevPulseDocumentChangeTracker(
                 ?: "unknown"
 
             val fileName = filePath.substringAfterLast('/')
+            val changeSource = if (pasteActionTracker.isPasteInProgress()) "PASTE" else "OTHER"
 
             val addedCharacters = event.newLength
             val removedCharacters = event.oldLength
             val netChange = event.newLength - event.oldLength
 
             val message =
-                "DevPulse change: $fileName: offset=${event.offset}, " +
-                        "+$addedCharacters / -$removedCharacters, net=$netChange"
+                "DevPulse change: $fileName: source=$changeSource, offset=${event.offset}, " +
+                    "+$addedCharacters / -$removedCharacters, net=$netChange"
 
             logger.info(message)
 
             // Uncomment for manual sandbox testing.
             // This prints structured document change events directly in the runIde terminal output.
-            //println(message)
+            println(message)
         }
     }
 
@@ -56,6 +58,6 @@ class DevPulseDocumentChangeTracker(
 
         // Uncomment for manual sandbox testing.
         // This prints tracker startup directly in the runIde terminal output.
-        //println("DevPulse document change tracker started")
+        println("DevPulse document change tracker started")
     }
 }

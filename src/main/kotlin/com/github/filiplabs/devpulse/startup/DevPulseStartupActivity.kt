@@ -24,16 +24,18 @@ class DevPulseStartupActivity : ProjectActivity {
 
         // Uncomment for manual sandbox testing.
         // This prints startup activity execution directly in the runIde terminal output.
-        // println("DevPulse startup activity executed for project: ${project.name}")
+        println("DevPulse startup activity executed for project: ${project.name}")
 
         val activeFileTracker = ActiveFileTracker(project)
         activeFileTracker.start()
 
-        PasteActionTracker(project).start()
+        val pasteActionTracker = PasteActionTracker(project)
+        pasteActionTracker.start()
 
         DevPulseDocumentChangeTracker(
             disposable = project,
-            activeFileTracker = activeFileTracker
+            activeFileTracker = activeFileTracker,
+            pasteActionTracker = pasteActionTracker
         ).start()
     }
 }

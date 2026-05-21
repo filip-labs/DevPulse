@@ -16,4 +16,13 @@
         <toolWindow factoryClass="com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory" id="DevPulse"/>
         <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.DevPulseStartupActivity" />
     </extensions>
+
+    <actions>
+        <!-- Temporary debug/test-only action. Remove after manual INSERTED classification verification. -->
+        <action
+                id="com.github.filiplabs.devpulse.debug.DevPulseDebugInsertAction"
+                class="com.github.filiplabs.devpulse.debug.DevPulseDebugInsertAction"
+                text="DevPulse Debug Insert Large Text"
+                description="Inserts a large debug text block to test DevPulse INSERTED classification"/>
+    </actions>
 </idea-plugin>

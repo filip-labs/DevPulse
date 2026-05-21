@@ -16,7 +16,8 @@ import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 
 class DevPulseDocumentChangeTracker(
-    private val disposable: Disposable
+    private val disposable: Disposable,
+    private val activeFileTracker: ActiveFileTracker
 ) {
 
     private val logger = thisLogger()
@@ -24,9 +25,18 @@ class DevPulseDocumentChangeTracker(
     private val documentListener = object : DocumentListener {
 
         override fun documentChanged(event: DocumentEvent) {
-            logger.info(
-                "DevPulse document changed: offset=${event.offset}, oldLength=${event.oldLength}, newLength=${event.newLength}"
-            )
+            val eventFilePath = activeFileTracker.getFilePath(event.document) ?: "unknown"
+            val activeFilePath = activeFileTracker.getActiveFilePath() ?: "unknown"
+
+            val message =
+                "DevPulse document changed: file=$eventFilePath, activeFile=$activeFilePath, " +
+                        "offset=${event.offset}, oldLength=${event.oldLength}, newLength=${event.newLength}"
+
+            logger.info(message)
+
+            // Uncomment for manual sandbox testing.
+            // This prints document change events directly in the runIde terminal output.
+            //println(message)
         }
     }
 
@@ -37,5 +47,9 @@ class DevPulseDocumentChangeTracker(
             .addDocumentListener(documentListener, disposable)
 
         logger.info("DevPulse document change tracker started")
+
+        // Uncomment for manual sandbox testing.
+        // This prints tracker startup directly in the runIde terminal output.
+        //println("DevPulse document change tracker started")
     }
 }

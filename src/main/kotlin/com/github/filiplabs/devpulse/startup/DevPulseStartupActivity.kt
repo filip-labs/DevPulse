@@ -6,15 +6,14 @@
  * Use, copying, modification, distribution, or commercial use is prohibited
  * without explicit written permission and a paid license from the author.
  */
-
 package com.github.filiplabs.devpulse.startup
 
 import com.github.filiplabs.devpulse.tracking.ActiveFileTracker
 import com.github.filiplabs.devpulse.tracking.DevPulseDocumentChangeTracker
+import com.github.filiplabs.devpulse.tracking.PasteActionTracker
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
-
 
 class DevPulseStartupActivity : ProjectActivity {
 
@@ -25,10 +24,12 @@ class DevPulseStartupActivity : ProjectActivity {
 
         // Uncomment for manual sandbox testing.
         // This prints startup activity execution directly in the runIde terminal output.
-        //println("DevPulse startup activity executed for project: ${project.name}")
+        // println("DevPulse startup activity executed for project: ${project.name}")
 
         val activeFileTracker = ActiveFileTracker(project)
         activeFileTracker.start()
+
+        PasteActionTracker(project).start()
 
         DevPulseDocumentChangeTracker(
             disposable = project,

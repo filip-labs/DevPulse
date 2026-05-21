@@ -1,4 +1,5 @@
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
+import org.gradle.api.tasks.Delete
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
@@ -14,4 +15,16 @@ dependencies {
         intellijIdea("2025.2.6.2")
         testFramework(TestFrameworkType.Platform)
     }
+}
+// The IntelliJ Platform Gradle plugin can keep stale instrumented test outputs
+// after removing template test files. Clean this directory before instrumentation
+// so deleted template tests are not restored during ./gradlew build.
+val cleanInstrumentedTestCode by tasks.registering(Delete::class) {
+    delete(layout.buildDirectory.dir("instrumented/instrumentTestCode"))
+}
+
+tasks.named("instrumentTestCode") {
+    outputs.cacheIf { false }
+    outputs.upToDateWhen { false }
+    dependsOn(cleanInstrumentedTestCode)
 }

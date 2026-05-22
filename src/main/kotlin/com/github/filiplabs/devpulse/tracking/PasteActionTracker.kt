@@ -24,6 +24,7 @@ class PasteActionTracker(
     private val logger = thisLogger()
 
     private val pasteInProgress = AtomicBoolean(false)
+    private val nonWritingActionInProgress = AtomicBoolean(false)
 
     fun start() {
         ApplicationManager
@@ -46,8 +47,18 @@ class PasteActionTracker(
                             logger.info("DevPulse paste action started: id=$actionId")
 
                             // Uncomment for manual sandbox testing.
-                            // This prints paste action start directly in the runIde terminal output.
-                            println("DevPulse paste action started: id=$actionId")
+                            // This prints paste action starts directly in the runIde terminal output.
+                            // println("DevPulse paste action started: id=$actionId")
+                        }
+
+                        if (isNonWritingAction(actionId)) {
+                            nonWritingActionInProgress.set(true)
+
+                            logger.info("DevPulse non-writing action started: id=$actionId")
+
+                            // Uncomment for manual sandbox testing.
+                            // This prints non-writing action start directly in the runIde terminal output.
+                            // println("DevPulse non-writing action started: id=$actionId")
                         }
                     }
 
@@ -65,7 +76,17 @@ class PasteActionTracker(
 
                             // Uncomment for manual sandbox testing.
                             // This prints paste action finish directly in the runIde terminal output.
-                            println("DevPulse paste action finished: id=$actionId")
+                            // println("DevPulse paste action finished: id=$actionId")
+                        }
+
+                        if (isNonWritingAction(actionId)) {
+                            nonWritingActionInProgress.set(false)
+
+                            logger.info("DevPulse non-writing action finished: id=$actionId")
+
+                            // Uncomment for manual sandbox testing.
+                            // This prints non-writing action finish directly in the runIde terminal output.
+                            // println("DevPulse non-writing action finished: id=$actionId")
                         }
                     }
                 }
@@ -75,14 +96,37 @@ class PasteActionTracker(
 
         // Uncomment for manual sandbox testing.
         // This prints paste action tracker startup directly in the runIde terminal output.
-        println("DevPulse paste action tracker started")
+        // println("DevPulse paste action tracker started")
     }
 
     fun isPasteInProgress(): Boolean {
         return pasteInProgress.get()
     }
 
+    fun isNonWritingActionInProgress(): Boolean {
+        return nonWritingActionInProgress.get()
+    }
+
     private fun isPasteAction(actionId: String): Boolean {
-        return actionId == "EditorPaste" || actionId == "\$Paste"
+        return actionId in PASTE_ACTION_IDS
+    }
+
+    private fun isNonWritingAction(actionId: String): Boolean {
+        return actionId in NON_WRITING_ACTION_IDS
+    }
+
+    private companion object {
+        val PASTE_ACTION_IDS = setOf("EditorPaste", "\$Paste")
+
+        val NON_WRITING_ACTION_IDS = setOf(
+            "\$Undo",
+            "\$Redo",
+            "Undo",
+            "Redo",
+            "EditorUndo",
+            "EditorRedo",
+            "ReformatCode",
+            "OptimizeImports"
+        )
     }
 }

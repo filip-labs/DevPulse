@@ -38,6 +38,19 @@ class DevPulseDocumentChangeTracker(
             val removedCharacters = event.oldLength
             val netChange = event.newLength - event.oldLength
 
+            if (pasteActionTracker.isNonWritingActionInProgress()) {
+                val ignoredMessage =
+                    "DevPulse change ignored: $fileName: source=IGNORED_ACTION, " +
+                        "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
+
+                logger.info(ignoredMessage)
+
+                // Uncomment for manual sandbox testing.
+                // This prints ignored document change events directly in the runIde terminal output.
+                // println(ignoredMessage)
+                return
+            }
+
             val editType = classifyEdit(
                 addedCharacters = addedCharacters,
                 causedByPaste = pasteActionTracker.isPasteInProgress()
@@ -58,7 +71,7 @@ class DevPulseDocumentChangeTracker(
 
             // Uncomment for manual sandbox testing.
             // This prints classified document change events directly in the runIde terminal output.
-            println(message)
+            // println(message)
         }
     }
 
@@ -72,7 +85,7 @@ class DevPulseDocumentChangeTracker(
 
         // Uncomment for manual sandbox testing.
         // This prints tracker startup directly in the runIde terminal output.
-        println("DevPulse document change tracker started")
+        // println("DevPulse document change tracker started")
     }
 
     private fun classifyEdit(

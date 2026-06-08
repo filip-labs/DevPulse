@@ -1,28 +1,18 @@
-<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
     <id>com.github.filiplabs.devpulse</id>
     <name>DevPulse</name>
     <vendor>filip-labs</vendor>
     <description><![CDATA[
-        <p><b>DevPulse</b> is a repository that provides a pure template to make it easier to create a new plugin project.</p>
-        <p>The main goal of this template is to speed up the setup phase of plugin development for both new and experienced developers by preconfiguring the project scaffold and CI, linking to the proper documentation pages, and keeping everything organized.</p>
+        <p><b>DevPulse</b> tracks your coding focus, edit activity, and Pomodoro sessions directly inside the IDE.</p>
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
-    <resource-bundle>messages.MyBundle</resource-bundle>
-
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory" id="DevPulse"/>
-        <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.DevPulseStartupActivity" />
+        <toolWindow
+                id="DevPulse"
+                factoryClass="com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory"
+                icon="/icons/devpulseToolWindow.svg"/>
+        <postStartupActivity implementation="com.github.filiplabs.devpulse.startup.DevPulseStartupActivity"/>
     </extensions>
-
-    <actions>
-        <!-- Temporary debug/test-only action. Remove after manual INSERTED classification verification. -->
-        <action
-                id="com.github.filiplabs.devpulse.debug.DevPulseDebugInsertAction"
-                class="com.github.filiplabs.devpulse.debug.DevPulseDebugInsertAction"
-                text="DevPulse Debug Insert Large Text"
-                description="Inserts a large debug text block to test DevPulse INSERTED classification"/>
-    </actions>
 </idea-plugin>

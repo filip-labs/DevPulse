@@ -16,10 +16,10 @@ dependencies {
         testFramework(TestFrameworkType.Platform)
     }
 }
-// The IntelliJ Platform Gradle plugin can keep stale instrumented test outputs
-// after removing template test files. Clean this directory before instrumentation
-// so deleted template tests are not restored during ./gradlew build.
+// The IntelliJ Platform Gradle plugin can keep stale instrumented test outputs.
+// Clean this directory before instrumentation so removed tests are not restored.
 val cleanInstrumentedTestCode by tasks.registering(Delete::class) {
+    description = ""
     delete(layout.buildDirectory.dir("instrumented/instrumentTestCode"))
 }
 

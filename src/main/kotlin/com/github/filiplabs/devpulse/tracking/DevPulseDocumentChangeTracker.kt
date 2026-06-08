@@ -16,12 +16,13 @@ import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
+import com.intellij.openapi.project.Project
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Service(Service.Level.PROJECT)
 class DevPulseDocumentChangeTracker(
-    private val project: com.intellij.openapi.project.Project
+    private val project: Project
 ) {
 
     private val logger = thisLogger()
@@ -45,7 +46,7 @@ class DevPulseDocumentChangeTracker(
 
             if (EditClassifier.shouldIgnore(addedCharacters, pasteActionTracker.isNonWritingActionInProgress())) {
                 if (!pasteActionTracker.isNonWritingActionInProgress()) {
-                    statsService.recordEditorActivity(filePath)
+                    statsService.recordEditorActivity()
                 }
 
                 val ignoredMessage =
@@ -55,10 +56,6 @@ class DevPulseDocumentChangeTracker(
                         "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
 
                 logger.info(ignoredMessage)
-
-                // Uncomment for manual sandbox testing.
-                // This prints ignored document change events directly in the runIde terminal output.
-                // println(ignoredMessage)
                 return
             }
 
@@ -81,10 +78,6 @@ class DevPulseDocumentChangeTracker(
                     "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
 
             logger.info(message)
-
-            // Uncomment for manual sandbox testing.
-            // This prints classified document change events directly in the runIde terminal output.
-            // println(message)
         }
     }
 
@@ -99,9 +92,5 @@ class DevPulseDocumentChangeTracker(
             .addDocumentListener(documentListener, project)
 
         logger.info("DevPulse document change tracker started")
-
-        // Uncomment for manual sandbox testing.
-        // This prints tracker startup directly in the runIde terminal output.
-        // println("DevPulse document change tracker started")
     }
 }

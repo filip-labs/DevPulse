@@ -91,7 +91,7 @@ class DevPulseStatsService(
         }
     }
 
-    fun recordEditorActivity(fileOrClass: String? = null) {
+    fun recordEditorActivity() {
         synchronized(lock) {
             rolloverIfNeededLocked()
             lastEditorActivityAtMillis = System.currentTimeMillis()
@@ -141,13 +141,6 @@ class DevPulseStatsService(
                 pomodoroCompletedSessions = pomodoroCompletedSessions
             )
         }
-    }
-
-    fun hasAnyData(): Boolean {
-        val stats = getTodayStats()
-        return stats.totalFocusSeconds > 0 ||
-            stats.totalWrittenCharacters > 0 ||
-            stats.pomodoroCompletedSessions > 0
     }
 
     fun isIdle(nowMillis: Long = System.currentTimeMillis()): Boolean {

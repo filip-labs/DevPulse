@@ -19,7 +19,6 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 
 @Service(Service.Level.PROJECT)
@@ -53,19 +52,10 @@ class ActiveFileTracker(
             )
 
         logger.info("DevPulse active file tracker started")
-
-        // Uncomment for manual sandbox testing.
-        // This prints active file tracker startup directly in the runIde terminal output.
-        //println("DevPulse active file tracker started")
     }
 
     fun getActiveFilePath(): String? {
         return activeFile?.path
-    }
-
-    fun getActiveFileName(): String? {
-        val path = getActiveFilePath() ?: return null
-        return File(path).name.ifBlank { path }
     }
 
     fun getFilePath(document: Document): String? {
@@ -79,13 +69,9 @@ class ActiveFileTracker(
 
         val path = file?.path ?: "unknown"
         if (file != null) {
-            project.service<DevPulseStatsService>().recordEditorActivity(file.path)
+            project.service<DevPulseStatsService>().recordEditorActivity()
         }
 
         logger.info("DevPulse active file changed: $path")
-
-        // Uncomment for manual sandbox testing.
-        // This prints the currently active file directly in the runIde terminal output.
-        // println("DevPulse active file changed: $path")
     }
 }

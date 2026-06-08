@@ -26,10 +26,6 @@ class DevPulseStartupActivity : ProjectActivity {
     override suspend fun execute(project: Project) {
         logger.info("DevPulse startup activity executed for project: ${project.name}")
 
-        // Uncomment for manual sandbox testing.
-        // This prints startup activity execution directly in the runIde terminal output.
-        // println("DevPulse startup activity executed for project: ${project.name}")
-
         project.service<DevPulseStatsService>()
         project.service<ActiveFileTracker>().start()
         project.service<PasteActionTracker>().start()

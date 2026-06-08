@@ -52,20 +52,12 @@ class PasteActionTracker(
                             pasteInProgress.set(true)
 
                             logger.info("DevPulse paste action started: id=$actionId")
-
-                            // Uncomment for manual sandbox testing.
-                            // This prints paste action starts directly in the runIde terminal output.
-                            // println("DevPulse paste action started: id=$actionId")
                         }
 
                         if (isNonWritingAction(actionId)) {
                             nonWritingActionInProgress.set(true)
 
                             logger.info("DevPulse non-writing action started: id=$actionId")
-
-                            // Uncomment for manual sandbox testing.
-                            // This prints non-writing action start directly in the runIde terminal output.
-                            // println("DevPulse non-writing action started: id=$actionId")
                         }
                     }
 
@@ -80,30 +72,18 @@ class PasteActionTracker(
                             pasteInProgress.set(false)
 
                             logger.info("DevPulse paste action finished: id=$actionId")
-
-                            // Uncomment for manual sandbox testing.
-                            // This prints paste action finish directly in the runIde terminal output.
-                            // println("DevPulse paste action finished: id=$actionId")
                         }
 
                         if (isNonWritingAction(actionId)) {
                             nonWritingActionInProgress.set(false)
 
                             logger.info("DevPulse non-writing action finished: id=$actionId")
-
-                            // Uncomment for manual sandbox testing.
-                            // This prints non-writing action finish directly in the runIde terminal output.
-                            // println("DevPulse non-writing action finished: id=$actionId")
                         }
                     }
                 }
             )
 
         logger.info("DevPulse paste action tracker started")
-
-        // Uncomment for manual sandbox testing.
-        // This prints paste action tracker startup directly in the runIde terminal output.
-        // println("DevPulse paste action tracker started")
     }
 
     fun isPasteInProgress(): Boolean {

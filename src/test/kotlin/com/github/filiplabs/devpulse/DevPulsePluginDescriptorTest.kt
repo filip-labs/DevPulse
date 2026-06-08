@@ -43,6 +43,11 @@ class DevPulsePluginDescriptorTest {
         assertFalse("plugin.xml should not reference MyProjectActivity", xml.contains("MyProjectActivity"))
         assertFalse("plugin.xml should not reference MyToolWindowFactory", xml.contains("MyToolWindowFactory"))
         assertFalse("plugin.xml should not reference MyProjectService", xml.contains("MyProjectService"))
+        assertFalse("plugin.xml should not reference MyBundle", xml.contains("MyBundle"))
+        assertFalse(
+            "plugin.xml should not register the debug insert action",
+            xml.contains("DevPulseDebugInsertAction")
+        )
 
         Class.forName("com.github.filiplabs.devpulse.toolWindow.DevPulseToolWindowFactory")
         Class.forName("com.github.filiplabs.devpulse.startup.DevPulseStartupActivity")

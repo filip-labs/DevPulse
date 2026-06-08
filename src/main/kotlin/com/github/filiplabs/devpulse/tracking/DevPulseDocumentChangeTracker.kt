@@ -9,25 +9,30 @@
 package com.github.filiplabs.devpulse.tracking
 
 import com.github.filiplabs.devpulse.model.EditEvent
-import com.github.filiplabs.devpulse.model.EditType
-import com.intellij.openapi.Disposable
+import com.github.filiplabs.devpulse.storage.DevPulseStatsService
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.EditorFactory
 import com.intellij.openapi.editor.event.DocumentEvent
 import com.intellij.openapi.editor.event.DocumentListener
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicBoolean
 
+@Service(Service.Level.PROJECT)
 class DevPulseDocumentChangeTracker(
-    private val disposable: Disposable,
-    private val activeFileTracker: ActiveFileTracker,
-    private val pasteActionTracker: PasteActionTracker
+    private val project: com.intellij.openapi.project.Project
 ) {
 
     private val logger = thisLogger()
+    private val started = AtomicBoolean(false)
 
     private val documentListener = object : DocumentListener {
 
         override fun documentChanged(event: DocumentEvent) {
+            val activeFileTracker = project.service<ActiveFileTracker>()
+            val pasteActionTracker = project.service<PasteActionTracker>()
+            val statsService = project.service<DevPulseStatsService>()
             val filePath = activeFileTracker.getFilePath(event.document)
                 ?: activeFileTracker.getActiveFilePath()
                 ?: "unknown"
@@ -38,7 +43,26 @@ class DevPulseDocumentChangeTracker(
             val removedCharacters = event.oldLength
             val netChange = event.newLength - event.oldLength
 
-            val editType = classifyEdit(
+            if (EditClassifier.shouldIgnore(addedCharacters, pasteActionTracker.isNonWritingActionInProgress())) {
+                if (!pasteActionTracker.isNonWritingActionInProgress()) {
+                    statsService.recordEditorActivity(filePath)
+                }
+
+                val ignoredMessage =
+                    "DevPulse change ignored: $fileName: source=" +
+                        if (pasteActionTracker.isNonWritingActionInProgress()) "IGNORED_ACTION" else "DELETION_ONLY" +
+                        ", " +
+                        "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
+
+                logger.info(ignoredMessage)
+
+                // Uncomment for manual sandbox testing.
+                // This prints ignored document change events directly in the runIde terminal output.
+                // println(ignoredMessage)
+                return
+            }
+
+            val editType = EditClassifier.classify(
                 addedCharacters = addedCharacters,
                 causedByPaste = pasteActionTracker.isPasteInProgress()
             )
@@ -50,47 +74,34 @@ class DevPulseDocumentChangeTracker(
                 characterCount = addedCharacters
             )
 
+            statsService.recordEditEvent(editEvent)
+
             val message =
-                "DevPulse change: $fileName: type=${editEvent.type}, " +
-                        "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
+                "DevPulse classified edit event: $fileName: type=${editEvent.type}, " +
+                    "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
 
             logger.info(message)
 
             // Uncomment for manual sandbox testing.
             // This prints classified document change events directly in the runIde terminal output.
-            println(message)
+            // println(message)
         }
     }
 
     fun start() {
+        if (!started.compareAndSet(false, true)) {
+            return
+        }
+
         EditorFactory
             .getInstance()
             .eventMulticaster
-            .addDocumentListener(documentListener, disposable)
+            .addDocumentListener(documentListener, project)
 
         logger.info("DevPulse document change tracker started")
 
         // Uncomment for manual sandbox testing.
         // This prints tracker startup directly in the runIde terminal output.
-        println("DevPulse document change tracker started")
-    }
-
-    private fun classifyEdit(
-        addedCharacters: Int,
-        causedByPaste: Boolean
-    ): EditType {
-        if (causedByPaste) {
-            return EditType.PASTED
-        }
-
-        return if (addedCharacters <= TYPED_CHARACTER_THRESHOLD) {
-            EditType.TYPED
-        } else {
-            EditType.INSERTED
-        }
-    }
-
-    private companion object {
-        const val TYPED_CHARACTER_THRESHOLD = 2
+        // println("DevPulse document change tracker started")
     }
 }

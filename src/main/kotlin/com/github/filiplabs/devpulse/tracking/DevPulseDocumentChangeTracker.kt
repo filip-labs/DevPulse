@@ -9,6 +9,7 @@
 package com.github.filiplabs.devpulse.tracking
 
 import com.github.filiplabs.devpulse.model.EditEvent
+import com.github.filiplabs.devpulse.services.DevPulseProjectLifecycleService
 import com.github.filiplabs.devpulse.storage.DevPulseStatsService
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -89,7 +90,7 @@ class DevPulseDocumentChangeTracker(
         EditorFactory
             .getInstance()
             .eventMulticaster
-            .addDocumentListener(documentListener, project)
+            .addDocumentListener(documentListener, project.service<DevPulseProjectLifecycleService>())
 
         logger.info("DevPulse document change tracker started")
     }

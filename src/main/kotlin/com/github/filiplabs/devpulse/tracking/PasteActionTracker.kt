@@ -8,12 +8,14 @@
  */
 package com.github.filiplabs.devpulse.tracking
 
+import com.github.filiplabs.devpulse.services.DevPulseProjectLifecycleService
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.AnActionResult
 import com.intellij.openapi.actionSystem.ex.AnActionListener
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import java.util.concurrent.atomic.AtomicBoolean
@@ -37,7 +39,7 @@ class PasteActionTracker(
         ApplicationManager
             .getApplication()
             .messageBus
-            .connect(project)
+            .connect(project.service<DevPulseProjectLifecycleService>())
             .subscribe(
                 AnActionListener.TOPIC,
                 object : AnActionListener {
@@ -105,11 +107,11 @@ class PasteActionTracker(
     }
 
     private companion object {
-        val PASTE_ACTION_IDS = setOf("EditorPaste", "\$Paste")
+        val PASTE_ACTION_IDS = setOf("EditorPaste", $$"$Paste")
 
         val NON_WRITING_ACTION_IDS = setOf(
-            "\$Undo",
-            "\$Redo",
+            $$"$Undo",
+            $$"$Redo",
             "Undo",
             "Redo",
             "EditorUndo",

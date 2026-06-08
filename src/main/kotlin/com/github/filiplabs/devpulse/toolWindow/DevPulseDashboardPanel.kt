@@ -72,7 +72,7 @@ class DevPulseDashboardPanel(
     private val currentFocusActivePanel = verticalPanel()
     private val currentFocusEmptyPanel = createEmptyState(
         AllIcons.FileTypes.Unknown,
-        "No active file",
+        NO_ACTIVE_FILE_TEXT,
         "Open a file and start typing to begin tracking."
     )
     private val currentFocusNameValue = createIconLabel(AllIcons.FileTypes.Any_type, "")
@@ -466,7 +466,7 @@ class DevPulseDashboardPanel(
         activeFileName: String?
     ) {
         overviewFocusTotalValue.text = formatDuration(stats.totalFocusSeconds)
-        overviewCurrentFileValue.text = activeFileName ?: "No active file"
+        overviewCurrentFileValue.text = activeFileName ?: NO_ACTIVE_FILE_TEXT
         overviewCurrentFileTimeValue.text = formatDuration(
             activeFilePath?.let { stats.timePerFileOrClass[it] } ?: 0L
         )
@@ -596,7 +596,7 @@ class DevPulseDashboardPanel(
         return when (status) {
             FocusStatus.ACTIVE -> "Active"
             FocusStatus.IDLE -> "Idle"
-            FocusStatus.NO_FILE -> "No active file"
+            FocusStatus.NO_FILE -> NO_ACTIVE_FILE_TEXT
         }
     }
 
@@ -744,6 +744,7 @@ class DevPulseDashboardPanel(
     }
 
     companion object {
+        private const val NO_ACTIVE_FILE_TEXT = "No active file"
         private const val TOP_FILE_LIMIT = 5
     }
 }

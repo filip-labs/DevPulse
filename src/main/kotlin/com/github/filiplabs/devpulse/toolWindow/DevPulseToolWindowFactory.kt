@@ -19,7 +19,7 @@ class DevPulseToolWindowFactory : ToolWindowFactory {
 
     override fun createToolWindowContent(project: Project, toolWindow: ToolWindow) {
         val panel = DevPulseDashboardPanel(project)
-        Disposer.register(project, panel)
+        Disposer.register(toolWindow.disposable, panel)
         val content = ContentFactory.getInstance().createContent(panel, null, false)
         toolWindow.contentManager.addContent(content)
     }

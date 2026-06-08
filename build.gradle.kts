@@ -7,12 +7,15 @@ plugins {
     id("org.jetbrains.changelog")
 }
 
+val intellijIdeaVersion = providers.gradleProperty("intellijIdeaVersion").get()
+val junitVersion = providers.gradleProperty("junitVersion").get()
+
 dependencies {
-    testImplementation("junit:junit:4.13.2")
+    testImplementation("junit:junit:$junitVersion")
 
     // IntelliJ Platform Gradle Plugin Dependencies Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-dependencies-extension.html
     intellijPlatform {
-        intellijIdea("2025.2.6.2")
+        intellijIdea(intellijIdeaVersion)
         testFramework(TestFrameworkType.Platform)
     }
 }

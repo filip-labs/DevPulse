@@ -8,6 +8,7 @@
  */
 package com.github.filiplabs.devpulse.tracking
 
+import com.github.filiplabs.devpulse.services.DevPulseProjectLifecycleService
 import com.github.filiplabs.devpulse.storage.DevPulseStatsService
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -40,7 +41,7 @@ class ActiveFileTracker(
         updateActiveFile(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
 
         project.messageBus
-            .connect(project)
+            .connect(project.service<DevPulseProjectLifecycleService>())
             .subscribe(
                 FileEditorManagerListener.FILE_EDITOR_MANAGER,
                 object : FileEditorManagerListener {

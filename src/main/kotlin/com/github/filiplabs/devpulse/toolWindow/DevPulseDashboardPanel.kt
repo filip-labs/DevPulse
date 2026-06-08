@@ -27,7 +27,6 @@ import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
 import com.intellij.ui.components.JBScrollPane
-import com.intellij.ui.components.JBTabbedPane
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
@@ -60,13 +59,6 @@ class DevPulseDashboardPanel(
     private val pomodoroService = project.service<DevPulsePomodoroService>()
 
     private val headerStatusIndicator = createStatusIndicator()
-    private val overviewStatusIndicator = createStatusIndicator()
-
-    private val overviewFocusTotalValue = valueLabel()
-    private val overviewCurrentFileValue = valueLabel()
-    private val overviewCurrentFileTimeValue = valueLabel()
-    private val overviewPomodoroStateValue = valueLabel()
-    private val overviewEditSummaryValue = valueLabel()
 
     private val currentFocusContent = JBPanel<JBPanel<*>>(BorderLayout())
     private val currentFocusActivePanel = verticalPanel()
@@ -75,11 +67,14 @@ class DevPulseDashboardPanel(
         NO_ACTIVE_FILE_TEXT,
         "Open a file and start typing to begin tracking."
     )
-    private val currentFocusNameValue = createIconLabel(AllIcons.FileTypes.Any_type, "")
+    private val currentFocusNameValue = createIconLabel(AllIcons.FileTypes.Any_type, "").apply {
+        font = font.deriveFont(Font.BOLD)
+    }
     private val currentFocusTimeValue = valueLabel()
     private val currentFocusStatusValue = valueLabel()
     private val focusTotalValue = valueLabel()
-    private val focusTopFilesContent = verticalPanel()
+    private val focusPomodoroSessionsValue = valueLabel()
+    private val focusPomodoroSummaryValue = valueLabel()
 
     private val pomodoroStateValue = valueLabel()
     private val pomodoroRemainingValue = JBLabel().apply {
@@ -113,8 +108,8 @@ class DevPulseDashboardPanel(
 
         buildCurrentFocusContent()
 
-        add(createMainHeader(), BorderLayout.NORTH)
-        add(createTabs(), BorderLayout.CENTER)
+        add(createHeaderPanel(), BorderLayout.NORTH)
+        add(createDashboardScrollPane(), BorderLayout.CENTER)
 
         startStopButton.addActionListener {
             pomodoroService.toggle()
@@ -133,11 +128,11 @@ class DevPulseDashboardPanel(
         refreshTimer.stop()
     }
 
-    private fun createMainHeader(): JPanel {
+    private fun createHeaderPanel(): JPanel {
         val titleLabel = createIconLabel(AllIcons.Toolwindows.ToolWindowProfiler, "DevPulse").apply {
             font = font.deriveFont(Font.BOLD, font.size2D + 5f)
         }
-        val subtitleLabel = secondaryLabel("Today's coding pulse")
+        val subtitleLabel = secondaryLabel("Today’s coding pulse")
 
         return JBPanel<JBPanel<*>>(BorderLayout()).apply {
             border = JBUI.Borders.emptyBottom(10)
@@ -153,69 +148,43 @@ class DevPulseDashboardPanel(
         }
     }
 
-    private fun createTabs(): JBTabbedPane {
-        return JBTabbedPane().apply {
-            addTab("Overview", createScrollableTab(createOverviewTab()))
-            addTab("Focus", createScrollableTab(createFocusTab()))
-            addTab("Pomodoro", createScrollableTab(createPomodoroTab()))
-            addTab("Edit Breakdown", createScrollableTab(createEditBreakdownTab()))
-            addTab("Top Files", createScrollableTab(createTopFilesTab()))
+    private fun createDashboardScrollPane(): JBScrollPane {
+        return JBScrollPane(createDashboardContent()).apply {
+            border = JBUI.Borders.empty()
+            viewportBorder = JBUI.Borders.empty()
         }
     }
 
-    private fun createOverviewTab(): JPanel {
-        return verticalPanel().apply {
-            add(createSectionCard("Status", AllIcons.General.InspectionsEye, overviewStatusIndicator))
-            add(Box.createVerticalStrut(8))
-            add(
-                createSectionCard(
-                    "Today at a Glance",
-                    AllIcons.Actions.StopWatch,
-                    verticalPanel().apply {
-                        add(createLabelValueRow("Total focus time", overviewFocusTotalValue))
-                        add(Box.createVerticalStrut(6))
-                        add(createLabelValueRow("Current file/class", overviewCurrentFileValue))
-                        add(Box.createVerticalStrut(6))
-                        add(createLabelValueRow("Focused here", overviewCurrentFileTimeValue))
-                    }
-                )
-            )
-            add(Box.createVerticalStrut(8))
-            add(
-                createSectionCard(
-                    "Activity Summary",
-                    AllIcons.Actions.Edit,
-                    verticalPanel().apply {
-                        add(createLabelValueRow("Pomodoro state", overviewPomodoroStateValue))
-                        add(Box.createVerticalStrut(6))
-                        add(createLabelValueRow("Edit breakdown", overviewEditSummaryValue))
-                    }
-                )
-            )
-            add(Box.createVerticalGlue())
-        }
-    }
-
-    private fun createFocusTab(): JPanel {
+    private fun createDashboardContent(): JPanel {
         return verticalPanel().apply {
             add(createSectionCard("Current Focus", AllIcons.General.Locate, currentFocusContent))
             add(Box.createVerticalStrut(8))
-            add(
-                createSectionCard(
-                    "Focus Today",
-                    AllIcons.Actions.StopWatch,
-                    verticalPanel().apply {
-                        add(createLabelValueRow("Total focus time", focusTotalValue))
-                    }
-                )
-            )
+            add(createFocusSummaryCard())
             add(Box.createVerticalStrut(8))
-            add(createSectionCard("Top Files / Classes", AllIcons.Nodes.Class, focusTopFilesContent))
+            add(createPomodoroCard())
+            add(Box.createVerticalStrut(8))
+            add(createEditBreakdownCard())
+            add(Box.createVerticalStrut(8))
+            add(createSectionCard("Top Files / Classes", AllIcons.Nodes.Class, topFilesContent))
             add(Box.createVerticalGlue())
         }
     }
 
-    private fun createPomodoroTab(): JPanel {
+    private fun createFocusSummaryCard(): JPanel {
+        return createSectionCard(
+            "Focus Summary",
+            AllIcons.Actions.StopWatch,
+            verticalPanel().apply {
+                add(createLabelValueRow("Total focus time", focusTotalValue))
+                add(Box.createVerticalStrut(6))
+                add(createLabelValueRow("Completed sessions", focusPomodoroSessionsValue))
+                add(Box.createVerticalStrut(6))
+                add(createLabelValueRow("Pomodoro state", focusPomodoroSummaryValue))
+            }
+        )
+    }
+
+    private fun createPomodoroCard(): JPanel {
         val buttonRow = JBPanel<JBPanel<*>>().apply {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
             add(startStopButton)
@@ -224,89 +193,65 @@ class DevPulseDashboardPanel(
             add(Box.createHorizontalGlue())
         }
 
-        return verticalPanel().apply {
-            add(
-                createSectionCard(
-                    "Pomodoro",
-                    AllIcons.Actions.Profile,
-                    verticalPanel().apply {
-                        add(createLabelValueRow("Timer state", pomodoroStateValue))
-                        add(Box.createVerticalStrut(8))
-                        add(pomodoroRemainingValue)
-                        add(Box.createVerticalStrut(8))
-                        add(createLabelValueRow("Completed sessions", pomodoroSessionsValue))
-                        add(Box.createVerticalStrut(10))
-                        add(buttonRow)
-                    }
-                )
-            )
-            add(Box.createVerticalGlue())
-        }
+        return createSectionCard(
+            "Pomodoro",
+            AllIcons.Actions.Execute,
+            verticalPanel().apply {
+                add(pomodoroRemainingValue)
+                add(Box.createVerticalStrut(8))
+                add(createLabelValueRow("Timer state", pomodoroStateValue))
+                add(Box.createVerticalStrut(6))
+                add(createLabelValueRow("Completed sessions", pomodoroSessionsValue))
+                add(Box.createVerticalStrut(10))
+                add(buttonRow)
+            }
+        )
     }
 
-    private fun createEditBreakdownTab(): JPanel {
-        return verticalPanel().apply {
-            add(
-                createSectionCard(
-                    "Edit Breakdown",
-                    AllIcons.Actions.Edit,
-                    verticalPanel().apply {
-                        add(
-                            createBreakdownRow(
-                                AllIcons.Actions.Edit,
-                                "Typed",
-                                typedCharsValue,
-                                typedPercentValue,
-                                typedProgressBar
-                            )
-                        )
-                        add(Box.createVerticalStrut(8))
-                        add(
-                            createBreakdownRow(
-                                AllIcons.Actions.MenuPaste,
-                                "Pasted",
-                                pastedCharsValue,
-                                pastedPercentValue,
-                                pastedProgressBar
-                            )
-                        )
-                        add(Box.createVerticalStrut(8))
-                        add(
-                            createBreakdownRow(
-                                AllIcons.Nodes.Method,
-                                "Inserted",
-                                insertedCharsValue,
-                                insertedPercentValue,
-                                insertedProgressBar
-                            )
-                        )
-                    }
+    private fun createEditBreakdownCard(): JPanel {
+        return createSectionCard(
+            "Edit Breakdown",
+            AllIcons.Actions.Edit,
+            verticalPanel().apply {
+                add(
+                    createBreakdownRow(
+                        AllIcons.Actions.Edit,
+                        "Typed",
+                        typedCharsValue,
+                        typedPercentValue,
+                        typedProgressBar
+                    )
                 )
-            )
-            add(Box.createVerticalGlue())
-        }
-    }
-
-    private fun createTopFilesTab(): JPanel {
-        return verticalPanel().apply {
-            add(createSectionCard("Top Files", AllIcons.Nodes.Class, topFilesContent))
-            add(Box.createVerticalGlue())
-        }
+                add(Box.createVerticalStrut(6))
+                add(
+                    createBreakdownRow(
+                        AllIcons.Actions.MenuPaste,
+                        "Pasted",
+                        pastedCharsValue,
+                        pastedPercentValue,
+                        pastedProgressBar
+                    )
+                )
+                add(Box.createVerticalStrut(6))
+                add(
+                    createBreakdownRow(
+                        AllIcons.Nodes.Method,
+                        "Inserted",
+                        insertedCharsValue,
+                        insertedPercentValue,
+                        insertedProgressBar
+                    )
+                )
+            }
+        )
     }
 
     private fun buildCurrentFocusContent() {
         currentFocusActivePanel.add(currentFocusNameValue)
         currentFocusActivePanel.add(Box.createVerticalStrut(8))
-        currentFocusActivePanel.add(createLabelValueRow("Focused here", currentFocusTimeValue))
+        currentFocusActivePanel.add(createLabelValueRow("Focused for", currentFocusTimeValue))
         currentFocusActivePanel.add(Box.createVerticalStrut(6))
         currentFocusActivePanel.add(createLabelValueRow("Status", currentFocusStatusValue))
-    }
-
-    private fun createScrollableTab(content: JPanel): JBScrollPane {
-        return JBScrollPane(content).apply {
-            border = JBUI.Borders.empty()
-            viewportBorder = JBUI.Borders.empty()
-        }
     }
 
     private fun createSectionCard(
@@ -348,7 +293,6 @@ class DevPulseDashboardPanel(
 
     private fun updateStatusIndicator(status: DevPulseUiStatus) {
         headerStatusIndicator.update(status)
-        overviewStatusIndicator.update(status)
     }
 
     private fun createLabelValueRow(label: String, valueLabel: JBLabel): JPanel {
@@ -396,35 +340,31 @@ class DevPulseDashboardPanel(
         percentLabel: JBLabel,
         progressBar: JProgressBar
     ): JPanel {
-        val header = JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
-            add(createIconLabel(icon, label), BorderLayout.WEST)
-            add(
-                JBPanel<JBPanel<*>>().apply {
-                    layout = BoxLayout(this, BoxLayout.X_AXIS)
-                    add(charsLabel)
-                    add(Box.createHorizontalStrut(6))
-                    add(percentLabel)
-                },
-                BorderLayout.EAST
-            )
+        val valuesPanel = JBPanel<JBPanel<*>>().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            add(charsLabel)
+            add(Box.createHorizontalStrut(6))
+            add(percentLabel)
         }
 
-        return verticalPanel().apply {
-            add(header)
-            add(Box.createVerticalStrut(4))
-            add(progressBar)
+        return JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
+            alignmentX = LEFT_ALIGNMENT
+            add(createIconLabel(icon, label), BorderLayout.WEST)
+            add(progressBar, BorderLayout.CENTER)
+            add(valuesPanel, BorderLayout.EAST)
         }
     }
 
     private fun createTopFileRow(
         rank: Int,
+        icon: Icon,
         filePath: String,
         duration: Long
     ): JPanel {
-        val rankLabel = secondaryLabel(rank.toString()).apply {
+        val rankLabel = secondaryLabel("$rank.").apply {
             preferredSize = JBUI.size(22, preferredSize.height)
         }
-        val nameLabel = createIconLabel(AllIcons.FileTypes.Any_type, displayName(filePath)).apply {
+        val nameLabel = createIconLabel(icon, displayName(filePath)).apply {
             toolTipText = filePath
         }
         val durationLabel = valueLabel(formatDuration(duration))
@@ -451,27 +391,11 @@ class DevPulseDashboardPanel(
         val uiStatus = determineUiStatus(activeFilePath, focusStatus)
 
         updateStatusIndicator(uiStatus)
-        refreshOverview(stats, pomodoro, activeFilePath, activeFileName)
         refreshCurrentFocus(stats, activeFilePath, activeFileName, focusStatus)
+        refreshFocusSummary(stats, pomodoro)
         refreshPomodoro(pomodoro, stats)
         refreshEditBreakdown(stats)
-        refreshTopFiles(focusTopFilesContent, stats)
         refreshTopFiles(topFilesContent, stats)
-    }
-
-    private fun refreshOverview(
-        stats: DayStats,
-        pomodoro: PomodoroSnapshot,
-        activeFilePath: String?,
-        activeFileName: String?
-    ) {
-        overviewFocusTotalValue.text = formatDuration(stats.totalFocusSeconds)
-        overviewCurrentFileValue.text = activeFileName ?: NO_ACTIVE_FILE_TEXT
-        overviewCurrentFileTimeValue.text = formatDuration(
-            activeFilePath?.let { stats.timePerFileOrClass[it] } ?: 0L
-        )
-        overviewPomodoroStateValue.text = formatPomodoroSummary(pomodoro, stats)
-        overviewEditSummaryValue.text = formatEditSummary(stats)
     }
 
     private fun refreshCurrentFocus(
@@ -495,6 +419,12 @@ class DevPulseDashboardPanel(
         currentFocusContent.revalidate()
         currentFocusContent.repaint()
         focusTotalValue.text = formatDuration(stats.totalFocusSeconds)
+    }
+
+    private fun refreshFocusSummary(stats: DayStats, pomodoro: PomodoroSnapshot) {
+        focusTotalValue.text = formatDuration(stats.totalFocusSeconds)
+        focusPomodoroSessionsValue.text = stats.pomodoroCompletedSessions.toString()
+        focusPomodoroSummaryValue.text = formatPomodoroState(pomodoro.state)
     }
 
     private fun refreshPomodoro(pomodoro: PomodoroSnapshot, stats: DayStats) {
@@ -532,7 +462,7 @@ class DevPulseDashboardPanel(
             )
         } else {
             topFiles.forEachIndexed { index, entry ->
-                content.add(createTopFileRow(index + 1, entry.key, entry.value))
+                content.add(createTopFileRow(index + 1, AllIcons.FileTypes.Any_type, entry.key, entry.value))
                 if (index < topFiles.lastIndex) {
                     content.add(Box.createVerticalStrut(6))
                 }
@@ -572,29 +502,9 @@ class DevPulseDashboardPanel(
         }
     }
 
-    private fun formatEditSummary(stats: DayStats): String {
-        val typed = stats.editCountersByType[EditType.TYPED] ?: 0
-        val pasted = stats.editCountersByType[EditType.PASTED] ?: 0
-        val inserted = stats.editCountersByType[EditType.INSERTED] ?: 0
-        val total = stats.totalWrittenCharacters
-
-        if (total <= 0) {
-            return "No edits recorded yet"
-        }
-
-        return "Typed ${percentage(typed, total)}%, Pasted ${percentage(pasted, total)}%, " +
-            "Inserted ${percentage(inserted, total)}%"
-    }
-
-    private fun formatPomodoroSummary(pomodoro: PomodoroSnapshot, stats: DayStats): String {
-        return "${formatPomodoroState(pomodoro.state)} - " +
-            "${formatDuration(pomodoro.remainingSeconds)} remaining - " +
-            "${stats.pomodoroCompletedSessions} completed"
-    }
-
     private fun formatFocusStatus(status: FocusStatus): String {
         return when (status) {
-            FocusStatus.ACTIVE -> "Active"
+            FocusStatus.ACTIVE -> "Tracking active"
             FocusStatus.IDLE -> "Idle"
             FocusStatus.NO_FILE -> NO_ACTIVE_FILE_TEXT
         }
@@ -615,10 +525,6 @@ class DevPulseDashboardPanel(
         val seconds = safeSeconds % 60
 
         return "%02d:%02d:%02d".format(hours, minutes, seconds)
-    }
-
-    private fun percentage(value: Int, total: Int): Int {
-        return if (total > 0) (value * 100) / total else 0
     }
 
     private fun displayName(filePath: String): String {

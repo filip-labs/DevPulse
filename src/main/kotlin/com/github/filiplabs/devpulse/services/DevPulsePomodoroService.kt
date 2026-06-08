@@ -10,6 +10,7 @@ package com.github.filiplabs.devpulse.services
 
 import com.github.filiplabs.devpulse.model.PomodoroSnapshot
 import com.github.filiplabs.devpulse.model.PomodoroState
+import com.github.filiplabs.devpulse.settings.DevPulseSettingsService
 import com.github.filiplabs.devpulse.storage.DevPulseStatsService
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
@@ -26,10 +27,12 @@ class DevPulsePomodoroService(
 ) : Disposable {
 
     private val logger = thisLogger()
+    private val settingsService = service<DevPulseSettingsService>()
     private val lock = Any()
 
     private var state = PomodoroState.IDLE
-    private var remainingSeconds = WORK_DURATION_SECONDS
+    private var remainingSeconds = settingsService.workDurationSeconds()
+    private var workSessionsInCycle = 0
 
     @Volatile
     private var tickerFuture: ScheduledFuture<*>? = null
@@ -39,7 +42,7 @@ class DevPulsePomodoroService(
         synchronized(lock) {
             if (state == PomodoroState.IDLE) {
                 state = PomodoroState.WORK
-                remainingSeconds = WORK_DURATION_SECONDS
+                remainingSeconds = settingsService.workDurationSeconds()
                 ensureTickerLocked()
                 shouldLog = true
             }
@@ -54,7 +57,7 @@ class DevPulsePomodoroService(
         synchronized(lock) {
             cancelTickerLocked()
             state = PomodoroState.IDLE
-            remainingSeconds = WORK_DURATION_SECONDS
+            remainingSeconds = settingsService.workDurationSeconds()
         }
 
         logger.info("DevPulse pomodoro state changed: IDLE")
@@ -64,7 +67,8 @@ class DevPulsePomodoroService(
         synchronized(lock) {
             cancelTickerLocked()
             state = PomodoroState.IDLE
-            remainingSeconds = WORK_DURATION_SECONDS
+            remainingSeconds = settingsService.workDurationSeconds()
+            workSessionsInCycle = 0
         }
 
         logger.info("DevPulse pomodoro reset")
@@ -84,6 +88,14 @@ class DevPulsePomodoroService(
                 state = state,
                 remainingSeconds = remainingSeconds
             )
+        }
+    }
+
+    fun applySettingsChanged() {
+        synchronized(lock) {
+            if (state == PomodoroState.IDLE) {
+                remainingSeconds = settingsService.workDurationSeconds()
+            }
         }
     }
 
@@ -144,16 +156,33 @@ class DevPulsePomodoroService(
             when (state) {
                 PomodoroState.WORK -> {
                     completedWorkSession = true
+                    workSessionsInCycle += 1
+                    val settings = settingsService.snapshot()
+                    val shouldUseLongBreak = workSessionsInCycle >= settings.sessionsBeforeLongBreak
+                    if (shouldUseLongBreak) {
+                        workSessionsInCycle = 0
+                    }
+
                     state = PomodoroState.BREAK
-                    remainingSeconds = BREAK_DURATION_SECONDS
+                    remainingSeconds = if (shouldUseLongBreak) {
+                        settingsService.longBreakSeconds()
+                    } else {
+                        settingsService.shortBreakSeconds()
+                    }
                     stateChangeMessage = "DevPulse pomodoro state changed: BREAK"
                 }
 
                 PomodoroState.BREAK -> {
-                    cancelTickerLocked()
-                    state = PomodoroState.IDLE
-                    remainingSeconds = WORK_DURATION_SECONDS
-                    stateChangeMessage = "DevPulse pomodoro state changed: IDLE"
+                    if (settingsService.snapshot().autoStartNextSession) {
+                        state = PomodoroState.WORK
+                        remainingSeconds = settingsService.workDurationSeconds()
+                        stateChangeMessage = "DevPulse pomodoro state changed: WORK"
+                    } else {
+                        cancelTickerLocked()
+                        state = PomodoroState.IDLE
+                        remainingSeconds = settingsService.workDurationSeconds()
+                        stateChangeMessage = "DevPulse pomodoro state changed: IDLE"
+                    }
                 }
 
                 PomodoroState.IDLE -> Unit
@@ -168,10 +197,5 @@ class DevPulsePomodoroService(
         if (stateChangeMessage != null) {
             logger.info(stateChangeMessage)
         }
-    }
-
-    companion object {
-        const val WORK_DURATION_SECONDS = 10L
-        const val BREAK_DURATION_SECONDS = 5L
     }
 }

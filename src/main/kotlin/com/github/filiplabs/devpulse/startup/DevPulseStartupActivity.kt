@@ -9,6 +9,7 @@
 package com.github.filiplabs.devpulse.startup
 
 import com.github.filiplabs.devpulse.services.DevPulsePomodoroService
+import com.github.filiplabs.devpulse.settings.DevPulseSettingsService
 import com.github.filiplabs.devpulse.storage.DevPulseStatsService
 import com.github.filiplabs.devpulse.tracking.ActiveFileTracker
 import com.github.filiplabs.devpulse.tracking.DevPulseDocumentChangeTracker
@@ -27,6 +28,9 @@ class DevPulseStartupActivity : ProjectActivity {
         logger.info("DevPulse startup activity executed for project: ${project.name}")
 
         project.service<DevPulseStatsService>()
+        if (service<DevPulseSettingsService>().snapshot().resetStatsOnProjectOpen) {
+            project.service<DevPulseStatsService>().resetStatistics()
+        }
         project.service<ActiveFileTracker>().start()
         project.service<PasteActionTracker>().start()
         project.service<DevPulseDocumentChangeTracker>().start()

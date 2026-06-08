@@ -11,10 +11,13 @@ package com.github.filiplabs.devpulse.storage
 import com.github.filiplabs.devpulse.model.DayStats
 import com.github.filiplabs.devpulse.model.EditEvent
 import com.github.filiplabs.devpulse.model.EditType
+import com.github.filiplabs.devpulse.settings.DevPulseMemoryMode
+import com.github.filiplabs.devpulse.settings.DevPulseSettingsService
 import com.intellij.openapi.components.PersistentStateComponent
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import java.io.File
@@ -30,6 +33,7 @@ class DevPulseStatsService(
 ) : PersistentStateComponent<DevPulseStatsService.PersistenceState> {
 
     private val logger = thisLogger()
+    private val settingsService = service<DevPulseSettingsService>()
     private val lock = Any()
 
     @Volatile
@@ -44,6 +48,10 @@ class DevPulseStatsService(
 
     override fun getState(): PersistenceState {
         synchronized(lock) {
+            if (settingsService.snapshot().memoryMode != DevPulseMemoryMode.KEEP_UNTIL_MANUAL_RESET) {
+                return PersistenceState()
+            }
+
             rolloverIfNeededLocked()
 
             return PersistenceState().apply {
@@ -61,6 +69,11 @@ class DevPulseStatsService(
 
     override fun loadState(state: PersistenceState) {
         synchronized(lock) {
+            if (settingsService.snapshot().memoryMode != DevPulseMemoryMode.KEEP_UNTIL_MANUAL_RESET) {
+                resetStatisticsLocked()
+                return
+            }
+
             currentDate = state.date.ifBlank { today() }
             focusSecondsByFile.clear()
             state.focusEntries.forEach { entry ->
@@ -143,6 +156,14 @@ class DevPulseStatsService(
         }
     }
 
+    fun resetStatistics() {
+        synchronized(lock) {
+            resetStatisticsLocked()
+        }
+
+        logger.info("DevPulse statistics reset for project: ${project.name}")
+    }
+
     fun isIdle(nowMillis: Long = System.currentTimeMillis()): Boolean {
         val lastActivity = lastEditorActivityAtMillis
         return nowMillis - lastActivity >= IDLE_TIMEOUT_MILLIS
@@ -154,15 +175,19 @@ class DevPulseStatsService(
             return
         }
 
-        currentDate = today
+        resetStatisticsLocked(today)
+
+        logger.info("DevPulse daily stats rolled over: date=$currentDate")
+    }
+
+    private fun resetStatisticsLocked(date: String = today()) {
+        currentDate = date
         focusSecondsByFile.clear()
         typedCharacters = 0
         pastedCharacters = 0
         insertedCharacters = 0
         pomodoroCompletedSessions = 0
         lastEditorActivityAtMillis = System.currentTimeMillis()
-
-        logger.info("DevPulse daily stats rolled over: date=$currentDate")
     }
 
     private fun today(): String = LocalDate.now().toString()

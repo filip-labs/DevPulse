@@ -8,6 +8,9 @@
  */
 package com.github.filiplabs.devpulse.tracking
 
+import com.github.filiplabs.devpulse.storage.DevPulseStatsService
+import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.editor.Document
 import com.intellij.openapi.fileEditor.FileDocumentManager
@@ -16,17 +19,25 @@ import com.intellij.openapi.fileEditor.FileEditorManagerEvent
 import com.intellij.openapi.fileEditor.FileEditorManagerListener
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
+import java.io.File
+import java.util.concurrent.atomic.AtomicBoolean
 
+@Service(Service.Level.PROJECT)
 class ActiveFileTracker(
     private val project: Project
 ) {
 
     private val logger = thisLogger()
+    private val started = AtomicBoolean(false)
 
     @Volatile
     private var activeFile: VirtualFile? = null
 
     fun start() {
+        if (!started.compareAndSet(false, true)) {
+            return
+        }
+
         updateActiveFile(FileEditorManager.getInstance(project).selectedFiles.firstOrNull())
 
         project.messageBus
@@ -52,6 +63,11 @@ class ActiveFileTracker(
         return activeFile?.path
     }
 
+    fun getActiveFileName(): String? {
+        val path = getActiveFilePath() ?: return null
+        return File(path).name.ifBlank { path }
+    }
+
     fun getFilePath(document: Document): String? {
         return FileDocumentManager.getInstance()
             .getFile(document)
@@ -62,6 +78,9 @@ class ActiveFileTracker(
         activeFile = file
 
         val path = file?.path ?: "unknown"
+        if (file != null) {
+            project.service<DevPulseStatsService>().recordEditorActivity(file.path)
+        }
 
         logger.info("DevPulse active file changed: $path")
 

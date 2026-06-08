@@ -13,20 +13,27 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.AnActionResult
 import com.intellij.openapi.actionSystem.ex.AnActionListener
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Service(Service.Level.PROJECT)
 class PasteActionTracker(
     private val project: Project
 ) {
 
     private val logger = thisLogger()
+    private val started = AtomicBoolean(false)
 
     private val pasteInProgress = AtomicBoolean(false)
     private val nonWritingActionInProgress = AtomicBoolean(false)
 
     fun start() {
+        if (!started.compareAndSet(false, true)) {
+            return
+        }
+
         ApplicationManager
             .getApplication()
             .messageBus
@@ -108,11 +115,13 @@ class PasteActionTracker(
     }
 
     private fun isPasteAction(actionId: String): Boolean {
-        return actionId in PASTE_ACTION_IDS
+        return actionId in PASTE_ACTION_IDS || actionId.contains("Paste", ignoreCase = true)
     }
 
     private fun isNonWritingAction(actionId: String): Boolean {
-        return actionId in NON_WRITING_ACTION_IDS
+        return actionId in NON_WRITING_ACTION_IDS ||
+            actionId.contains("Undo", ignoreCase = true) ||
+            actionId.contains("Redo", ignoreCase = true)
     }
 
     private companion object {

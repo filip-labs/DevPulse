@@ -8,9 +8,13 @@
  */
 package com.github.filiplabs.devpulse.startup
 
+import com.github.filiplabs.devpulse.services.DevPulsePomodoroService
+import com.github.filiplabs.devpulse.storage.DevPulseStatsService
 import com.github.filiplabs.devpulse.tracking.ActiveFileTracker
 import com.github.filiplabs.devpulse.tracking.DevPulseDocumentChangeTracker
+import com.github.filiplabs.devpulse.tracking.DevPulseFocusTracker
 import com.github.filiplabs.devpulse.tracking.PasteActionTracker
+import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
@@ -26,16 +30,11 @@ class DevPulseStartupActivity : ProjectActivity {
         // This prints startup activity execution directly in the runIde terminal output.
         // println("DevPulse startup activity executed for project: ${project.name}")
 
-        val activeFileTracker = ActiveFileTracker(project)
-        activeFileTracker.start()
-
-        val pasteActionTracker = PasteActionTracker(project)
-        pasteActionTracker.start()
-
-        DevPulseDocumentChangeTracker(
-            disposable = project,
-            activeFileTracker = activeFileTracker,
-            pasteActionTracker = pasteActionTracker
-        ).start()
+        project.service<DevPulseStatsService>()
+        project.service<ActiveFileTracker>().start()
+        project.service<PasteActionTracker>().start()
+        project.service<DevPulseDocumentChangeTracker>().start()
+        project.service<DevPulseFocusTracker>().start()
+        project.service<DevPulsePomodoroService>()
     }
 }

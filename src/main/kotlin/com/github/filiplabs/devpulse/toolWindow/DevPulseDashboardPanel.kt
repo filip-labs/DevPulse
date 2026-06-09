@@ -24,7 +24,6 @@ import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.ui.Gray
-import com.intellij.ui.IdeBorderFactory
 import com.intellij.ui.JBColor
 import com.intellij.ui.components.JBLabel
 import com.intellij.ui.components.JBPanel
@@ -33,6 +32,7 @@ import com.intellij.util.ui.JBFont
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.UIUtil
 import java.awt.BorderLayout
+import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Component
 import java.awt.Dimension
@@ -65,20 +65,17 @@ class DevPulseDashboardPanel(
     private val settingsService = service<DevPulseSettingsService>()
 
     private val headerStatusIndicator = createStatusIndicator()
-    private val currentFocusAccent = AccentLine(DevPulseUiStatus.WAITING.color)
+    private val headerPulseLine = PulseLineComponent()
+    private val focusAccent = AccentLine(DevPulseUiStatus.WAITING.color)
     private var wasShowing = false
 
     private val currentFocusContent = JBPanel<JBPanel<*>>(BorderLayout()).apply {
         isOpaque = false
     }
     private val currentFocusActivePanel = verticalPanel()
-    private val currentFocusEmptyPanel = createEmptyState(
-        AllIcons.FileTypes.Unknown,
-        NO_ACTIVE_FILE_TEXT,
-        "Open a file and start typing to begin tracking."
-    )
     private val currentFocusNameValue = createIconLabel(AllIcons.FileTypes.Any_type, "").apply {
         font = JBFont.label().asBold().deriveFont(font.size2D + 2f)
+        foreground = TYPED_ACCENT
     }
     private val currentFocusTimeValue = valueLabel()
     private val currentFocusStatusValue = valueLabel()
@@ -90,18 +87,18 @@ class DevPulseDashboardPanel(
     private val pomodoroRemainingValue = JBLabel().apply {
         font = JBFont.label().asBold().deriveFont(font.size2D + 12f)
     }
-    private val pomodoroSessionsValue = valueLabel()
-    private val pomodoroRunningIndicator = RunningIndicator()
+    private val pomodoroStateDot = StatusDot()
+    private val pomodoroProgressBar = createProgressBar(POMODORO_ACCENT)
 
     private val typedCharsValue = valueLabel()
     private val typedPercentValue = secondaryLabel("")
-    private val typedProgressBar = createProgressBar()
+    private val typedProgressBar = createProgressBar(TYPED_ACCENT)
     private val pastedCharsValue = valueLabel()
     private val pastedPercentValue = secondaryLabel("")
-    private val pastedProgressBar = createProgressBar()
+    private val pastedProgressBar = createProgressBar(PASTED_ACCENT)
     private val insertedCharsValue = valueLabel()
     private val insertedPercentValue = secondaryLabel("")
-    private val insertedProgressBar = createProgressBar()
+    private val insertedProgressBar = createProgressBar(INSERTED_ACCENT)
 
     private val topFilesContent = verticalPanel()
 
@@ -138,22 +135,26 @@ class DevPulseDashboardPanel(
 
     override fun dispose() {
         refreshTimer.stop()
-        pomodoroRunningIndicator.stop()
     }
 
     private fun createDashboardPanel(): JPanel {
         return verticalPanel().apply {
-            border = JBUI.Borders.empty(12, 14, 14, 14)
+            border = JBUI.Borders.compound(
+                JBUI.Borders.customLine(cardBorderColor()),
+                JBUI.Borders.empty(8)
+            )
+            background = dashboardBackground()
+            isOpaque = true
             add(createHeaderPanel())
-            add(Box.createVerticalStrut(12))
-            add(createSectionCard("Current Focus", AllIcons.General.Locate, currentFocusContent, currentFocusAccent))
-            add(Box.createVerticalStrut(10))
-            add(createFocusSessionCard())
-            add(Box.createVerticalStrut(10))
+            add(Box.createVerticalStrut(8))
+            add(createCurrentFocusCard())
+            add(Box.createVerticalStrut(8))
+            add(createFocusSummaryCard())
+            add(Box.createVerticalStrut(8))
             add(createPomodoroCard())
-            add(Box.createVerticalStrut(10))
+            add(Box.createVerticalStrut(8))
             add(createEditBreakdownCard())
-            add(Box.createVerticalStrut(10))
+            add(Box.createVerticalStrut(8))
             add(createSectionCard("Top Files / Classes", AllIcons.Nodes.Class, topFilesContent))
             add(Box.createVerticalGlue())
         }
@@ -161,9 +162,17 @@ class DevPulseDashboardPanel(
 
     private fun createHeaderPanel(): JPanel {
         val titleLabel = JBLabel("DevPulse").apply {
-            font = JBFont.label().asBold().deriveFont(font.size2D + 7f)
+            font = JBFont.label().asBold().deriveFont(font.size2D + 5f)
         }
         val subtitleLabel = secondaryLabel("Today’s coding pulse")
+        val titleRow = JBPanel<JBPanel<*>>().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
+            isOpaque = false
+            add(titleLabel)
+            add(Box.createHorizontalStrut(8))
+            add(headerStatusIndicator)
+            add(Box.createHorizontalGlue())
+        }
         val pulseLine = createPulseLineComponent()
         val settingsButton = createSettingsButton()
         val rightIconContent = JBPanel<JBPanel<*>>().apply {
@@ -181,23 +190,17 @@ class DevPulseDashboardPanel(
 
         return JBPanel<JBPanel<*>>(BorderLayout()).apply {
             alignmentX = LEFT_ALIGNMENT
-            border = JBUI.Borders.compound(
-                JBUI.Borders.customLine(cardBorderColor()),
-                JBUI.Borders.empty(12)
-            )
-            background = cardBackground()
-            isOpaque = true
+            border = JBUI.Borders.empty(2, 2, 4, 2)
+            isOpaque = false
             add(
                 JBPanel<JBPanel<*>>(BorderLayout()).apply {
                     isOpaque = false
                     add(
                         verticalPanel().apply {
                             isOpaque = false
-                            add(titleLabel)
+                            add(titleRow)
                             add(Box.createVerticalStrut(3))
                             add(subtitleLabel)
-                            add(Box.createVerticalStrut(8))
-                            add(headerStatusIndicator)
                         },
                         BorderLayout.CENTER
                     )
@@ -215,7 +218,7 @@ class DevPulseDashboardPanel(
     }
 
     private fun createPulseLineComponent(): JComponent {
-        return PulseLineComponent()
+        return headerPulseLine
     }
 
     private fun createSettingsButton(): JButton {
@@ -225,7 +228,7 @@ class DevPulseDashboardPanel(
             isOpaque = false
             isContentAreaFilled = false
             isBorderPainted = false
-            margin = JBUI.insets(0)
+            margin = JBUI.emptyInsets()
             preferredSize = JBUI.size(28, 28)
             minimumSize = preferredSize
             maximumSize = preferredSize
@@ -262,29 +265,43 @@ class DevPulseDashboardPanel(
         return JBScrollPane(createDashboardPanel()).apply {
             border = JBUI.Borders.empty()
             viewportBorder = JBUI.Borders.empty()
+            background = dashboardBackground()
+            viewport.background = dashboardBackground()
             verticalScrollBar.unitIncrement = JBUI.scale(16)
         }
     }
 
-    private fun createFocusSessionCard(): JPanel {
+    private fun createCurrentFocusCard(): JPanel {
         return createSectionCard(
-            "Focus Session",
+            "Current Focus",
+            AllIcons.General.Locate,
+            currentFocusContent,
+            focusAccent
+        )
+    }
+
+    private fun createFocusSummaryCard(): JPanel {
+        return createSectionCard(
+            "Focus Summary",
             AllIcons.Actions.StopWatch,
             verticalPanel().apply {
                 add(createLabelValueRow("Total focus time", focusTotalValue))
                 add(Box.createVerticalStrut(6))
-                add(createLabelValueRow("Completed Pomodoros", focusPomodoroSessionsValue))
+                add(createLabelValueRow("Completed sessions", focusPomodoroSessionsValue))
                 add(Box.createVerticalStrut(6))
-                add(createLabelValueRow("Current session", focusPomodoroSummaryValue))
+                add(createLabelValueRow("Current state", focusPomodoroSummaryValue))
             }
         )
     }
 
     private fun createPomodoroCard(): JPanel {
-        val timerHeader = JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
+        val statusRow = JBPanel<JBPanel<*>>().apply {
+            layout = BoxLayout(this, BoxLayout.X_AXIS)
             isOpaque = false
-            add(pomodoroRemainingValue, BorderLayout.CENTER)
-            add(pomodoroRunningIndicator, BorderLayout.EAST)
+            add(pomodoroStateDot)
+            add(Box.createHorizontalStrut(6))
+            add(pomodoroStateValue)
+            add(Box.createHorizontalGlue())
         }
 
         val buttonRow = JBPanel<JBPanel<*>>().apply {
@@ -300,11 +317,12 @@ class DevPulseDashboardPanel(
             "Pomodoro",
             AllIcons.Actions.StopWatch,
             verticalPanel().apply {
-                add(timerHeader)
+                pomodoroRemainingValue.alignmentX = LEFT_ALIGNMENT
+                add(pomodoroRemainingValue)
                 add(Box.createVerticalStrut(6))
-                add(createLabelValueRow("Timer state", pomodoroStateValue))
-                add(Box.createVerticalStrut(6))
-                add(createLabelValueRow("Completed sessions", pomodoroSessionsValue))
+                add(statusRow)
+                add(Box.createVerticalStrut(8))
+                add(pomodoroProgressBar)
                 add(Box.createVerticalStrut(10))
                 add(buttonRow)
             }
@@ -354,7 +372,7 @@ class DevPulseDashboardPanel(
         currentFocusActivePanel.add(Box.createVerticalStrut(8))
         currentFocusActivePanel.add(createLabelValueRow("Focused for", currentFocusTimeValue))
         currentFocusActivePanel.add(Box.createVerticalStrut(6))
-        currentFocusActivePanel.add(createLabelValueRow("Tracking", currentFocusStatusValue))
+        currentFocusActivePanel.add(createLabelValueRow("Tracking status", currentFocusStatusValue))
     }
 
     private fun createSectionCard(
@@ -365,7 +383,7 @@ class DevPulseDashboardPanel(
     ): JPanel {
         val cardBody = JBPanel<JBPanel<*>>(BorderLayout()).apply {
             isOpaque = false
-            border = JBUI.Borders.empty(10, if (accentLine == null) 10 else 8, 10, 10)
+            border = JBUI.Borders.empty(9, if (accentLine == null) 10 else 8, 9, 10)
             add(createSectionHeader(title, icon), BorderLayout.NORTH)
             add(
                 JBPanel<JBPanel<*>>(BorderLayout()).apply {
@@ -379,7 +397,7 @@ class DevPulseDashboardPanel(
 
         return JBPanel<JBPanel<*>>(BorderLayout()).apply {
             alignmentX = LEFT_ALIGNMENT
-            border = IdeBorderFactory.createBorder()
+            border = JBUI.Borders.customLine(cardBorderColor())
             background = cardBackground()
             isOpaque = true
             accentLine?.let { add(it, BorderLayout.WEST) }
@@ -391,8 +409,9 @@ class DevPulseDashboardPanel(
         return JBPanel<JBPanel<*>>(BorderLayout()).apply {
             isOpaque = false
             add(
-                createIconLabel(icon, title).apply {
-                    font = JBFont.label().asBold()
+                createIconLabel(icon, title.uppercase()).apply {
+                    font = JBFont.small().asBold()
+                    foreground = secondaryForeground()
                 },
                 BorderLayout.CENTER
             )
@@ -405,7 +424,8 @@ class DevPulseDashboardPanel(
 
     private fun updateStatusIndicator(status: DevPulseUiStatus) {
         headerStatusIndicator.update(status)
-        currentFocusAccent.updateColor(status.color)
+        headerPulseLine.updateStatus(status)
+        focusAccent.updateColor(status.color)
     }
 
     private fun createLabelValueRow(label: String, valueLabel: JBLabel): JPanel {
@@ -414,6 +434,7 @@ class DevPulseDashboardPanel(
             isOpaque = false
             add(secondaryLabel(label), BorderLayout.WEST)
             add(valueLabel, BorderLayout.EAST)
+            maximumSize = Dimension(Int.MAX_VALUE, preferredSize.height)
         }
     }
 
@@ -423,28 +444,28 @@ class DevPulseDashboardPanel(
         }
     }
 
-    private fun createEmptyState(
-        icon: Icon,
-        title: String,
-        helperText: String
-    ): JPanel {
+    private fun createWaitingCurrentFocusContent(): JPanel {
         return JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
             alignmentX = LEFT_ALIGNMENT
             isOpaque = false
             border = JBUI.Borders.empty(4, 0)
 
-            val iconLabel = JBLabel(icon).apply {
+            val iconLabel = JBLabel(AllIcons.FileTypes.Unknown).apply {
                 foreground = secondaryForeground()
+                isEnabled = false
             }
             val textPanel = verticalPanel().apply {
                 isOpaque = false
-                add(JBLabel(title).apply {
+                add(JBLabel(NO_ACTIVE_FILE_TEXT).apply {
                     font = JBFont.label().asBold()
-                    foreground = UIUtil.getLabelForeground()
+                    foreground = waitingForeground()
                     alignmentX = LEFT_ALIGNMENT
                 })
                 add(Box.createVerticalStrut(3))
-                add(secondaryLabel(helperText).apply {
+                add(secondaryLabel("Open a file and start typing to begin").apply {
+                    alignmentX = LEFT_ALIGNMENT
+                })
+                add(secondaryLabel("tracking.").apply {
                     alignmentX = LEFT_ALIGNMENT
                 })
             }
@@ -463,25 +484,30 @@ class DevPulseDashboardPanel(
     ): JPanel {
         val labelPanel = JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(6), 0)).apply {
             isOpaque = false
-            preferredSize = JBUI.size(88, preferredSize.height)
+            preferredSize = JBUI.size(86, preferredSize.height)
             add(JBLabel(icon), BorderLayout.WEST)
-            add(JBLabel(label), BorderLayout.CENTER)
+            add(secondaryLabel(label), BorderLayout.CENTER)
         }
 
         val valuesPanel = JBPanel<JBPanel<*>>().apply {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
             isOpaque = false
             add(charsLabel)
-            add(Box.createHorizontalStrut(6))
+            add(Box.createHorizontalStrut(8))
             add(percentLabel)
         }
 
-        return JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
+        val topRow = JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
             alignmentX = LEFT_ALIGNMENT
             isOpaque = false
             add(labelPanel, BorderLayout.WEST)
-            add(progressBar, BorderLayout.CENTER)
             add(valuesPanel, BorderLayout.EAST)
+        }
+
+        return verticalPanel().apply {
+            add(topRow)
+            add(Box.createVerticalStrut(4))
+            add(progressBar)
         }
     }
 
@@ -497,16 +523,18 @@ class DevPulseDashboardPanel(
         }
         val nameLabel = createIconLabel(icon, displayName(filePath)).apply {
             toolTipText = filePath
+            foreground = TYPED_ACCENT
         }
         val durationLabel = valueLabel(formatDuration(duration))
 
         return JBPanel<JBPanel<*>>(BorderLayout(JBUI.scale(8), 0)).apply {
             alignmentX = LEFT_ALIGNMENT
             isOpaque = false
-            border = JBUI.Borders.empty(2, 0)
+            border = JBUI.Borders.empty(1, 0)
             add(rankLabel, BorderLayout.WEST)
             add(nameLabel, BorderLayout.CENTER)
             add(durationLabel, BorderLayout.EAST)
+            maximumSize = Dimension(Int.MAX_VALUE, preferredSize.height)
         }
     }
 
@@ -523,12 +551,39 @@ class DevPulseDashboardPanel(
         val focusStatus = focusTracker.getStatus()
         val uiStatus = determineUiStatus(activeFilePath, focusStatus)
 
+        if (uiStatus == DevPulseUiStatus.WAITING) {
+            updateWaitingState(pomodoro)
+            return
+        }
+
         updateStatusIndicator(uiStatus)
         refreshCurrentFocus(stats, activeFilePath, activeFileName, focusStatus)
-        refreshFocusSummary(stats, pomodoro)
-        refreshPomodoro(pomodoro, stats)
+        refreshFocusSummary(stats, uiStatus)
+        refreshPomodoro(pomodoro)
         refreshEditBreakdown(stats)
         refreshTopFiles(topFilesContent, stats)
+    }
+
+    private fun updateWaitingState(pomodoro: PomodoroSnapshot) {
+        updateStatusIndicator(DevPulseUiStatus.WAITING)
+        currentFocusContent.removeAll()
+        currentFocusContent.add(createWaitingCurrentFocusContent(), BorderLayout.CENTER)
+        currentFocusContent.revalidate()
+        currentFocusContent.repaint()
+
+        createWaitingFocusSummaryContent()
+        refreshPomodoro(pomodoro)
+        refreshEditBreakdownValues(0, 0, 0)
+        refreshTopFiles(topFilesContent, null)
+    }
+
+    private fun createWaitingFocusSummaryContent() {
+        focusTotalValue.text = "00:00:00"
+        focusTotalValue.foreground = waitingForeground()
+        focusPomodoroSessionsValue.text = "0"
+        focusPomodoroSessionsValue.foreground = waitingForeground()
+        focusPomodoroSummaryValue.text = "Waiting"
+        focusPomodoroSummaryValue.foreground = DevPulseUiStatus.WAITING.color
     }
 
     private fun refreshCurrentFocus(
@@ -540,12 +595,17 @@ class DevPulseDashboardPanel(
         currentFocusContent.removeAll()
 
         if (activeFilePath.isNullOrBlank() || activeFileName == null) {
-            currentFocusContent.add(currentFocusEmptyPanel, BorderLayout.CENTER)
+            currentFocusContent.add(createWaitingCurrentFocusContent(), BorderLayout.CENTER)
         } else {
             currentFocusNameValue.text = activeFileName
             currentFocusNameValue.toolTipText = activeFilePath
             currentFocusTimeValue.text = formatDuration(stats.timePerFileOrClass[activeFilePath] ?: 0L)
             currentFocusStatusValue.text = formatFocusStatus(focusStatus)
+            currentFocusStatusValue.foreground = when (focusStatus) {
+                FocusStatus.ACTIVE -> DevPulseUiStatus.ACTIVE.color
+                FocusStatus.IDLE -> DevPulseUiStatus.IDLE.color
+                FocusStatus.NO_FILE -> DevPulseUiStatus.WAITING.color
+            }
             currentFocusContent.add(currentFocusActivePanel, BorderLayout.CENTER)
         }
 
@@ -553,21 +613,32 @@ class DevPulseDashboardPanel(
         currentFocusContent.repaint()
     }
 
-    private fun refreshFocusSummary(stats: DayStats, pomodoro: PomodoroSnapshot) {
+    private fun refreshFocusSummary(stats: DayStats, uiStatus: DevPulseUiStatus) {
         focusTotalValue.text = formatDuration(stats.totalFocusSeconds)
+        focusTotalValue.foreground = UIUtil.getLabelForeground()
         focusPomodoroSessionsValue.text = stats.pomodoroCompletedSessions.toString()
-        focusPomodoroSummaryValue.text = formatPomodoroState(pomodoro.state)
+        focusPomodoroSessionsValue.foreground = UIUtil.getLabelForeground()
+        focusPomodoroSummaryValue.text = uiStatus.text
+        focusPomodoroSummaryValue.foreground = uiStatus.color
     }
 
-    private fun refreshPomodoro(pomodoro: PomodoroSnapshot, stats: DayStats) {
+    private fun refreshPomodoro(pomodoro: PomodoroSnapshot) {
         val isRunning = pomodoro.state != PomodoroState.IDLE
 
         pomodoroStateValue.text = formatPomodoroState(pomodoro.state)
-        pomodoroRemainingValue.text = formatDuration(pomodoro.remainingSeconds)
-        pomodoroSessionsValue.text = stats.pomodoroCompletedSessions.toString()
-        startStopButton.text = if (isRunning) "Stop" else "Start"
+        pomodoroStateValue.foreground = pomodoroUiStatus(pomodoro.state).color
+        pomodoroRemainingValue.text = formatTimerDuration(pomodoro.remainingSeconds)
+        pomodoroRemainingValue.foreground = if (pomodoro.state == PomodoroState.IDLE) {
+            waitingForeground()
+        } else {
+            UIUtil.getLabelForeground()
+        }
+        pomodoroStateDot.updateStatus(pomodoroUiStatus(pomodoro.state))
+        pomodoroProgressBar.value = pomodoroProgressPercent(pomodoro)
+        startStopButton.text = if (isRunning) "Pause" else "Start"
         startStopButton.icon = if (isRunning) AllIcons.Actions.Suspend else AllIcons.Actions.Execute
-        pomodoroRunningIndicator.setRunning(isRunning)
+        startStopButton.foreground = if (isRunning) UIUtil.getLabelForeground() else POMODORO_ACCENT
+        resetButton.foreground = secondaryForeground()
     }
 
     private fun refreshEditBreakdown(stats: DayStats) {
@@ -576,26 +647,30 @@ class DevPulseDashboardPanel(
         val inserted = stats.editCountersByType[EditType.INSERTED] ?: 0
         val total = stats.totalWrittenCharacters.coerceAtLeast(0)
 
-        updateBreakdownValues(typed, total, typedCharsValue, typedPercentValue, typedProgressBar)
-        updateBreakdownValues(pasted, total, pastedCharsValue, pastedPercentValue, pastedProgressBar)
-        updateBreakdownValues(inserted, total, insertedCharsValue, insertedPercentValue, insertedProgressBar)
+        refreshEditBreakdownValues(typed, pasted, inserted, total)
     }
 
-    private fun refreshTopFiles(content: JPanel, stats: DayStats) {
+    private fun refreshEditBreakdownValues(
+        typed: Int,
+        pasted: Int,
+        inserted: Int,
+        total: Int = typed + pasted + inserted
+    ) {
+        val safeTotal = total.coerceAtLeast(0)
+        updateBreakdownValues(typed, safeTotal, typedCharsValue, typedPercentValue, typedProgressBar)
+        updateBreakdownValues(pasted, safeTotal, pastedCharsValue, pastedPercentValue, pastedProgressBar)
+        updateBreakdownValues(inserted, safeTotal, insertedCharsValue, insertedPercentValue, insertedProgressBar)
+    }
+
+    private fun refreshTopFiles(content: JPanel, stats: DayStats?) {
         content.removeAll()
 
-        val topFiles = stats.timePerFileOrClass.entries
+        val topFiles = stats?.timePerFileOrClass.orEmpty().entries
             .sortedByDescending { it.value }
             .take(TOP_FILE_LIMIT)
 
         if (topFiles.isEmpty()) {
-            content.add(
-                createEmptyState(
-                    AllIcons.FileTypes.Any_type,
-                    "No focus data yet",
-                    "Start editing a file to see your top files here."
-                )
-            )
+            content.add(createEmptyTopFilesState())
         } else {
             topFiles.forEachIndexed { index, entry ->
                 content.add(createTopFileRow(index + 1, AllIcons.FileTypes.Any_type, entry.key, entry.value))
@@ -609,6 +684,21 @@ class DevPulseDashboardPanel(
         content.repaint()
     }
 
+    private fun createEmptyTopFilesState(): JPanel {
+        return JBPanel<JBPanel<*>>(BorderLayout()).apply {
+            alignmentX = LEFT_ALIGNMENT
+            isOpaque = false
+            border = JBUI.Borders.empty(6, 0)
+            add(
+                secondaryLabel("No focus data yet.").apply {
+                    horizontalAlignment = JBLabel.CENTER
+                },
+                BorderLayout.CENTER
+            )
+            maximumSize = Dimension(Int.MAX_VALUE, preferredSize.height)
+        }
+    }
+
     private fun updateBreakdownValues(
         chars: Int,
         total: Int,
@@ -616,10 +706,33 @@ class DevPulseDashboardPanel(
         percentLabel: JBLabel,
         progressBar: JProgressBar
     ) {
-        val percent = if (total > 0) (chars * 100) / total else 0
-        charsLabel.text = "$chars chars"
+        val percent = if (total > 0) ((chars.toLong() * 100L) / total).toInt() else 0
+        charsLabel.text = "%,d chars".format(chars)
         percentLabel.text = "$percent%"
         progressBar.value = percent
+    }
+
+    private fun pomodoroUiStatus(state: PomodoroState): DevPulseUiStatus {
+        return when (state) {
+            PomodoroState.IDLE -> DevPulseUiStatus.WAITING
+            PomodoroState.WORK -> DevPulseUiStatus.ACTIVE
+            PomodoroState.BREAK -> DevPulseUiStatus.IDLE
+        }
+    }
+
+    private fun pomodoroProgressPercent(pomodoro: PomodoroSnapshot): Int {
+        val totalSeconds = when (pomodoro.state) {
+            PomodoroState.IDLE,
+            PomodoroState.WORK -> settingsService.workDurationSeconds().coerceAtLeast(pomodoro.remainingSeconds)
+            PomodoroState.BREAK -> {
+                val shortBreak = settingsService.shortBreakSeconds()
+                val longBreak = settingsService.longBreakSeconds()
+                if (pomodoro.remainingSeconds > shortBreak) longBreak else shortBreak
+            }
+        }.coerceAtLeast(1L)
+        val elapsedSeconds = (totalSeconds - pomodoro.remainingSeconds).coerceIn(0L, totalSeconds)
+
+        return ((elapsedSeconds * 100L) / totalSeconds).toInt()
     }
 
     private fun determineUiStatus(
@@ -640,17 +753,30 @@ class DevPulseDashboardPanel(
 
     private fun formatFocusStatus(status: FocusStatus): String {
         return when (status) {
-            FocusStatus.ACTIVE -> "Tracking active file"
-            FocusStatus.IDLE -> "Idle"
-            FocusStatus.NO_FILE -> "Waiting for editor"
+            FocusStatus.ACTIVE -> "\u25cf Tracking active"
+            FocusStatus.IDLE -> "\u25cf Idle"
+            FocusStatus.NO_FILE -> "\u25cf Waiting for editor"
         }
     }
 
     private fun formatPomodoroState(state: PomodoroState): String {
         return when (state) {
-            PomodoroState.IDLE -> "Ready to start"
+            PomodoroState.IDLE -> "Ready"
             PomodoroState.WORK -> "Work session"
             PomodoroState.BREAK -> "Break"
+        }
+    }
+
+    private fun formatTimerDuration(totalSeconds: Long): String {
+        val safeSeconds = totalSeconds.coerceAtLeast(0)
+        val hours = safeSeconds / 3_600
+        val minutes = (safeSeconds % 3_600) / 60
+        val seconds = safeSeconds % 60
+
+        return if (hours > 0) {
+            "%d:%02d:%02d".format(hours, minutes, seconds)
+        } else {
+            "%02d:%02d".format(minutes, seconds)
         }
     }
 
@@ -685,9 +811,21 @@ class DevPulseDashboardPanel(
             ?: JBColor.GRAY
     }
 
+    private fun waitingForeground(): Color {
+        return JBColor(Gray._115, Gray._130)
+    }
+
     private fun cardBackground(): Color {
-        return UIManager.getColor("Panel.background")
+        val base = UIManager.getColor("Panel.background")
             ?: UIUtil.getPanelBackground()
+        return JBColor(
+            slightlyShift(base, 6),
+            slightlyShift(base, -7)
+        )
+    }
+
+    private fun dashboardBackground(): Color {
+        return UIUtil.getPanelBackground()
     }
 
     private fun cardBorderColor(): Color {
@@ -695,13 +833,13 @@ class DevPulseDashboardPanel(
             ?: UIUtil.getBoundsColor()
     }
 
-    private fun createProgressBar(): JProgressBar {
-        return JProgressBar(0, 100).apply {
-            isStringPainted = false
-            isBorderPainted = false
-            preferredSize = Dimension(0, JBUI.scale(6))
-            maximumSize = Dimension(Int.MAX_VALUE, JBUI.scale(6))
-        }
+    private fun createProgressBar(accentColor: Color): JProgressBar {
+        return AccentProgressBar(accentColor)
+    }
+
+    private fun slightlyShift(color: Color, amount: Int): Color {
+        fun channel(value: Int): Int = (value + amount).coerceIn(0, 255)
+        return Color(channel(color.red), channel(color.green), channel(color.blue), color.alpha)
     }
 
     private fun verticalPanel(): JBPanel<JBPanel<*>> {
@@ -742,17 +880,13 @@ class DevPulseDashboardPanel(
 
         init {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
-            border = JBUI.Borders.compound(
-                JBUI.Borders.customLine(UIUtil.getBoundsColor()),
-                JBUI.Borders.empty(3, 8)
-            )
+            border = JBUI.Borders.empty()
             isOpaque = false
             alignmentX = LEFT_ALIGNMENT
 
             add(dot)
             add(Box.createHorizontalStrut(6))
             add(textLabel)
-            add(Box.createHorizontalGlue())
 
             update(DevPulseUiStatus.WAITING)
         }
@@ -760,6 +894,7 @@ class DevPulseDashboardPanel(
         fun update(status: DevPulseUiStatus) {
             dot.updateStatus(status)
             textLabel.text = status.text
+            textLabel.foreground = status.color
         }
     }
 
@@ -834,10 +969,22 @@ class DevPulseDashboardPanel(
 
     private class PulseLineComponent : JComponent() {
 
+        private var lineColor: Color = DevPulseUiStatus.WAITING.color
+
         init {
             isOpaque = false
-            preferredSize = JBUI.size(72, 32)
+            preferredSize = JBUI.size(62, 24)
             minimumSize = JBUI.size(0, 0)
+        }
+
+        fun updateStatus(status: DevPulseUiStatus) {
+            lineColor = when (status) {
+                DevPulseUiStatus.ACTIVE -> TYPED_ACCENT
+                DevPulseUiStatus.IDLE -> DevPulseUiStatus.IDLE.color
+                DevPulseUiStatus.INACTIVE,
+                DevPulseUiStatus.WAITING -> DevPulseUiStatus.WAITING.color
+            }
+            repaint()
         }
 
         override fun paintComponent(g: Graphics) {
@@ -846,7 +993,8 @@ class DevPulseDashboardPanel(
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                g2.color = JBColor(Color(0x5F, 0x8D, 0x6A), Color(0x78, 0xA8, 0x62))
+                g2.color = lineColor
+                g2.stroke = BasicStroke(JBUI.scale(1).toFloat())
 
                 val mid = height / 2
                 val left = JBUI.scale(4)
@@ -881,57 +1029,37 @@ class DevPulseDashboardPanel(
         }
     }
 
-    private class RunningIndicator : JComponent() {
-
-        private val timer = Timer(1_200) { repaint() }
-        private var running = false
+    private class AccentProgressBar(
+        private val accentColor: Color
+    ) : JProgressBar(0, 100) {
 
         init {
+            isStringPainted = false
+            isBorderPainted = false
             isOpaque = false
-            preferredSize = JBUI.size(48, 24)
-            minimumSize = preferredSize
-            maximumSize = preferredSize
-
-            addComponentListener(object : ComponentAdapter() {
-                override fun componentHidden(e: ComponentEvent?) {
-                    stop()
-                }
-            })
-        }
-
-        fun setRunning(running: Boolean) {
-            this.running = running
-            if (running && !timer.isRunning) {
-                timer.start()
-            } else if (!running) {
-                stop()
-            }
-            repaint()
-        }
-
-        fun stop() {
-            if (timer.isRunning) {
-                timer.stop()
-            }
+            preferredSize = Dimension(0, JBUI.scale(6))
+            maximumSize = Dimension(Int.MAX_VALUE, JBUI.scale(6))
+            minimumSize = Dimension(0, JBUI.scale(6))
         }
 
         override fun paintComponent(g: Graphics) {
-            super.paintComponent(g)
-
-            if (!running) {
-                return
-            }
-
             val g2 = g.create() as Graphics2D
             try {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
-                val color = DevPulseUiStatus.ACTIVE.color
-                g2.color = Color(color.red, color.green, color.blue, 160)
-                val dotSize = JBUI.scale(5)
-                val y = (height - dotSize) / 2
-                for (i in 0..2) {
-                    val x = JBUI.scale(8 + i * 10)
-                    g2.fillOval(x, y, dotSize, dotSize)
+
+                val arc = JBUI.scale(6)
+                val barHeight = JBUI.scale(5)
+                val y = (height - barHeight) / 2
+                val fillWidth = ((width * percentComplete).toInt()).coerceIn(0, width)
+                val track = UIManager.getColor("Component.borderColor")
+                    ?: UIUtil.getBoundsColor()
+
+                g2.color = Color(track.red, track.green, track.blue, 80)
+                g2.fillRoundRect(0, y, width, barHeight, arc, arc)
+
+                if (fillWidth > 0) {
+                    g2.color = accentColor
+                    g2.fillRoundRect(0, y, fillWidth, barHeight, arc, arc)
                 }
             } finally {
                 g2.dispose()
@@ -942,5 +1070,10 @@ class DevPulseDashboardPanel(
     companion object {
         private const val NO_ACTIVE_FILE_TEXT = "No active file"
         private const val TOP_FILE_LIMIT = 5
+
+        private val TYPED_ACCENT = JBColor(Color(0x2E, 0x78, 0xA6), Color(0x5E, 0xB6, 0xD8))
+        private val PASTED_ACCENT = JBColor(Color(0x9A, 0x63, 0x25), Color(0xD0, 0x8A, 0x3D))
+        private val INSERTED_ACCENT = JBColor(Color(0x78, 0x55, 0xA2), Color(0xA6, 0x7F, 0xD6))
+        private val POMODORO_ACCENT = JBColor(Color(0x4D, 0x7E, 0x54), Color(0x6D, 0xA8, 0x69))
     }
 }

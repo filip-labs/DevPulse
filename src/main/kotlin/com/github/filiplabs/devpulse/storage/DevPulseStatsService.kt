@@ -126,7 +126,7 @@ class DevPulseStatsService(
             focusSecondsByFile[fileOrClass] = totalForFile
         }
 
-        logger.info(
+        logger.debug(
             "DevPulse focus seconds added: file=${displayName(fileOrClass)}, " +
                 "seconds=$seconds, total=$totalForFile"
         )
@@ -210,16 +210,8 @@ class DevPulseStatsService(
         var pomodoroCompletedSessions: Int = 0
     }
 
-    class FocusEntryState() {
-        var file: String = ""
+    class FocusEntryState(
+        var file: String = "",
         var seconds: Long = 0L
-
-        constructor(
-            file: String,
-            seconds: Long
-        ) : this() {
-            this.file = file
-            this.seconds = seconds
-        }
-    }
+    )
 }

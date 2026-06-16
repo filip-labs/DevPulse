@@ -3,8 +3,13 @@ import org.jetbrains.intellij.platform.gradle.extensions.intellijPlatform
 rootProject.name = "DevPulse"
 
 pluginManagement {
+    val kotlinVersion: String by settings
+    val composeMultiplatformVersion: String by settings
+
     plugins {
-        id("org.jetbrains.kotlin.jvm") version "2.4.0"
+        id("org.jetbrains.kotlin.jvm") version kotlinVersion
+        id("org.jetbrains.kotlin.plugin.compose") version kotlinVersion
+        id("org.jetbrains.compose") version composeMultiplatformVersion
         id("org.jetbrains.changelog") version "2.5.0"
     }
 }
@@ -18,6 +23,7 @@ plugins {
 dependencyResolutionManagement {
     // Configure all projects' repositories
     repositories {
+        google()
         mavenCentral()
 
         // IntelliJ Platform Gradle Plugin Repositories Extension - read more: https://plugins.jetbrains.com/docs/intellij/tools-intellij-platform-gradle-plugin-repositories-extension.html

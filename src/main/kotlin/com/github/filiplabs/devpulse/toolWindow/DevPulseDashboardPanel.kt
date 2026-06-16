@@ -64,7 +64,7 @@ class DevPulseDashboardPanel(
     private val pomodoroService = project.service<DevPulsePomodoroService>()
     private val settingsService = service<DevPulseSettingsService>()
 
-    private val headerStatusIndicator = createStatusIndicator()
+    private val headerStatusIndicator = TrafficLightStatusIndicator()
     private val headerPulseLine = PulseLineComponent()
     private val focusAccent = AccentLine(DevPulseUiStatus.WAITING.color)
     private var wasShowing = false
@@ -173,7 +173,7 @@ class DevPulseDashboardPanel(
             add(headerStatusIndicator)
             add(Box.createHorizontalGlue())
         }
-        val pulseLine = createPulseLineComponent()
+        val pulseLine = headerPulseLine
         val settingsButton = createSettingsButton()
         val rightIconContent = JBPanel<JBPanel<*>>().apply {
             layout = BoxLayout(this, BoxLayout.X_AXIS)
@@ -215,10 +215,6 @@ class DevPulseDashboardPanel(
                 }
             })
         }
-    }
-
-    private fun createPulseLineComponent(): JComponent {
-        return headerPulseLine
     }
 
     private fun createSettingsButton(): JButton {
@@ -416,10 +412,6 @@ class DevPulseDashboardPanel(
                 BorderLayout.CENTER
             )
         }
-    }
-
-    private fun createStatusIndicator(): TrafficLightStatusIndicator {
-        return TrafficLightStatusIndicator()
     }
 
     private fun updateStatusIndicator(status: DevPulseUiStatus) {

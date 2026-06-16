@@ -65,7 +65,7 @@ class DevPulseSettingsDialog(
         DevPulseSettingsService.MAX_SESSIONS_BEFORE_LONG_BREAK
     )
     private val autoStartNextSessionCheckbox = JBCheckBox("Auto-start next session", initialState.autoStartNextSession)
-    private val memoryModeComboBox = ComboBox(DevPulseMemoryMode.values()).apply {
+    private val memoryModeComboBox = ComboBox(DevPulseMemoryMode.entries.toTypedArray()).apply {
         selectedItem = initialState.memoryMode
     }
     private val resetStatsOnProjectOpenCheckbox = JBCheckBox(

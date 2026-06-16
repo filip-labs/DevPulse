@@ -44,19 +44,18 @@ class DevPulseDocumentChangeTracker(
             val addedCharacters = event.newLength
             val removedCharacters = event.oldLength
             val netChange = event.newLength - event.oldLength
+            val isNonWriting = pasteActionTracker.isNonWritingActionInProgress()
 
-            if (EditClassifier.shouldIgnore(addedCharacters, pasteActionTracker.isNonWritingActionInProgress())) {
-                if (!pasteActionTracker.isNonWritingActionInProgress()) {
+            if (EditClassifier.shouldIgnore(addedCharacters, isNonWriting)) {
+                if (!isNonWriting) {
                     statsService.recordEditorActivity()
                 }
 
-                val ignoredMessage =
-                    "DevPulse change ignored: $fileName: source=" +
-                        if (pasteActionTracker.isNonWritingActionInProgress()) "IGNORED_ACTION" else "DELETION_ONLY" +
-                        ", " +
+                val source = if (isNonWriting) "IGNORED_ACTION" else "DELETION_ONLY"
+                logger.info(
+                    "DevPulse change ignored: $fileName: source=$source, " +
                         "offset=${event.offset}, +$addedCharacters / -$removedCharacters, net=$netChange"
-
-                logger.info(ignoredMessage)
+                )
                 return
             }
 

@@ -54,13 +54,19 @@ class DevPulsePomodoroService(
     }
 
     fun stop() {
+        var shouldLog = false
         synchronized(lock) {
-            cancelTickerLocked()
-            state = PomodoroState.IDLE
-            remainingSeconds = settingsService.workDurationSeconds()
+            if (state != PomodoroState.IDLE) {
+                cancelTickerLocked()
+                state = PomodoroState.IDLE
+                remainingSeconds = settingsService.workDurationSeconds()
+                shouldLog = true
+            }
         }
 
-        logger.info("DevPulse pomodoro state changed: IDLE")
+        if (shouldLog) {
+            logger.info("DevPulse pomodoro state changed: IDLE")
+        }
     }
 
     fun reset() {
@@ -75,11 +81,21 @@ class DevPulsePomodoroService(
     }
 
     fun toggle() {
-        if (getSnapshot().state == PomodoroState.IDLE) {
-            start()
-        } else {
-            stop()
+        val message: String
+        synchronized(lock) {
+            if (state == PomodoroState.IDLE) {
+                state = PomodoroState.WORK
+                remainingSeconds = settingsService.workDurationSeconds()
+                ensureTickerLocked()
+                message = "DevPulse pomodoro state changed: WORK"
+            } else {
+                cancelTickerLocked()
+                state = PomodoroState.IDLE
+                remainingSeconds = settingsService.workDurationSeconds()
+                message = "DevPulse pomodoro state changed: IDLE"
+            }
         }
+        logger.info(message)
     }
 
     fun getSnapshot(): PomodoroSnapshot {
